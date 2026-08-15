@@ -1,142 +1,75 @@
-<div align="center">
+# Office Connector (office-mcp) — AiConnect adaptation of OfficeMCP
 
-<!-- omit in toc -->
-# OfficeMCP v1.0.5
-<strong>>The most seeable and free way to control Microsof applications by AI model.</strong>
+Adapted from upstream [OfficeMCP/OfficeMCP](https://github.com/OfficeMCP/OfficeMCP)
+(commit `188140dc`, v1.0.5, fork `rezahanif/OfficeMCP`).
 
-[![PyPI - Version](https://img.shields.io/pypi/v/fastmcp.svg)](https://pypi.org/project/fastmcp)
+> **LICENSE — DISTRIBUTION BLOCKED.** Upstream has **no LICENSE file**. Local
+> rework and internal fixture/testing use only. Public/customer redistribution
+> is BLOCKED until an upstream license/redistribution grant is obtained
+> (author: youngfe@live.com). Decision 2026-08-15 (D2).
 
-</div>
+## Classification (AiConnect compatibility v2)
 
-# OfficeMCP
+- **Family**: COM / LOCAL RUNTIME (same shape as sap2000-mcp)
+- **Platform**: Windows only (COM via pywin32) · manifest `platform: windows/x64`
+- **Transport**: stdio (`stdio: true`) via mcp-stdio-bridge
+- **host_plugin**: none — connector talks COM directly to Office apps
+- **Gateway/PM changes**: NONE — connector fits the existing contract
 
-OfficeMCP server is designed for AI to automate Microsoft Office Applications (Word, Excel, PowerPoint, Access, OneNote, Visio, Project, WPS.word, Wps.powerpoint, wps.excel etc.) by COM interface in Windows OS. Not working on Linux/MacOS.
+## Security posture (D1, 2026-08-15)
 
-# Warns
+Upstream `RunPython` (unrestricted `exec()` with builtins + full COM `Officer`
+in scope) is **REMOVED from the MCP surface**. The connector exposes only the
+curated lifecycle/query tools:
 
-Please keep it in mind, as OfficeMCP not limit the usage of python. epeciall there's a tool RunPython(...) to execute python codes created by Ai model. But it is also the most wonderfull parts of OfficeMCP. we can't guarantee that your AI model will not do something bad to your computer. we don't take any responsibility.
+`AvailableApps, RunningApps, IsAppAvailable, DownloadImage, RootFolder,
+Visible, Launch, ScreenShot, IsFileExists, Quit, Speak, Beep, Demonstrate`
 
-# System Requirements
+No arbitrary Python execution. Project/advanced document automation (reachable
+upstream only via RunPython) is NOT exposed.
 
-1. Windows system
+## AiConnect integration
 
-2. python 3.1 or above installed
+- `manifest.json` — CP18 package fields + gateway runtime fields; stdio:true.
+- `run_server.py` — gateway entrypoint; license gate first (fail-closed:
+  invalid/missing token → nonzero exit → PM crash/backoff), then central
+  envelope wrap, then upstream `mcp.run(stdio)`.
+- `officemcp/aioconnect.py` — adapter: `AICONNECT_ENABLE=1` activates license
+  gate (token binding: `sub == connector:office-mcp` + entitlement) + ok/fail
+  response envelope on every tool; standalone run stays plain upstream.
+- Lazy imports — `pywintypes`/`win32com.client`/`winreg` load inside methods;
+  server boots headless on non-Windows (tools fail with structured TOOL_ERROR).
+- `AICONNECT_FAKE_BRIDGE=1` — COM-free `FakeOfficer` for headless fixture tests.
 
-3. uv installed
-    open an shell window and run command    
-    >pip install uv
+## Upstream fixes included
 
+- stdout `print()` pollution → stderr (stdio protocol purity)
+- `Beep` passed duration as frequency
+- `DownloadImage` returned None
+- `Demonstrate` NameError on failure path
+- `Launch` param typo `visilbe`
+- hardcoded `D:\@OfficeMCP` default folder → `OFFICE_MCP_ROOT` env / `~/@OfficeMCP`
 
+## Validation status
 
-## How to install OfficeMCP
-There are two ways or two modes to install OfficeMCP (They also can be used in the same time):
+| Suite | Status |
+|---|---|
+| Adapter unit (`tests/check_aioconnect.py`) | VERIFIED on Linux sandbox |
+| PM harness (`tests/process_manager/`) | VERIFIED on Linux sandbox (fake officer) |
+| Real Office COM round-trip | **BLOCKED** — requires Windows + Office |
+| Gateway fixture round-trip | pending — gateway `manifest.rs` has in-flight Agent 2 WIP |
 
-### 1. Use OfficeMCP as stdio server: 
-- One OfficeMCP server for one mcp client mode
-- Put following setting to MCP.json file for vscode or some proper place for other AI IDE:
-
-```json
-{
-    "mcpServers": {
-        "OfficeMCP": {
-            "type": "stdio",
-            "command": "uvx",
-            "args": [
-                "officemcp"
-            ]
-        }
-    }
-}
-```
-
-### 2. Use OfficeMCP as sse server: 
-- One OfficeMCP server for multi mcp client mode
-- You can change port and host as you like
-- This is recommended way to use OfficeMCP server.
-#### step 1:  
-**Run one command in shell or power shell:**
->uvx officemcp sse
-
-the Mcp server url will be:  "http://127.0.0.1:8888/sse"  or  "http://127.0.0.1:8888/sse" 
-the default work folder is D:\@officemcp
-
-
-##### or something like below
->uvx officemcp sse --port 7777 --host 127.0.0.8 --folder D:\myfolder
-
-"url" will be : "http://127.0.0.8:7777/sse"
-#### step 2: 
-**Put following setting to MCP.json file for vscode or some proper place for other AI IDE:**
-
-```json
-{
-    "servers": {
-        "OfficeMCP": {
-            "url": "http://127.0.0.1:8888/sse"
-        }
-    }
-}
-```
-
-####  or
-
-```json
-{
-    "servers": {
-        "OfficeMCP": {
-            "url": "http://{your_host}:{your_port}/sse"
-        }
-    }
-}
+## Layout
 
 ```
-
-## Usage
-On AI IDE, you can ask AI model to control Office Applications by OfficeMCP server:
-- You ask AI model to open a new Office Application.
-    AI model will send a request to OfficeMCP server, and OfficeMCP server will open a new Office Application.
-
-- You ask AI model to do whatever you want to do in the current Office Application.
-    AI model will analyze your request, and call OfficeMCP server's tool to accomplish your request.
-
-## Tools Reference
-Tools:
-- AvailableApps(): check if Microsoft Office applications are installed on your computer.
-
-- RunningApps(): get a list of currently running Office applications.
-
-- IsAppAvailable(...): check if a specific Office application is installed.
-
-- Launch(...): launch a new Office application and set its visibility.
-
-- Visible(...): set the specified Office application's visibility to True or False.
-
-- Quit(...): quit the specified Office application.
-
-- Demonstrate(): run a demonstration of OfficeMCP automation features.
-
-- Speak(...): speak a string you passed in.
-
-- Beep(...): play a beep sound.
-
-- DefaultFolder(...): return the OfficeMCP root work folder default is ("D:\OfficeMCP")
-
-- IsFileExists(sub_path): check if a file exists in the OfficeMCP root folder.
-
-- DownloadImage(...): download an image from a given URL and save it to the specified path.
-
-- RunPython(codes,data): run python code in the OfficeMCP server context.
-    - This is the most powerful tool in OfficeMCP server. AI can use this tool to do anything supported by the server, including automating Office applications.
-    - There is an object "Officer" that can be used in the python code, e.g. `Officer.Excel` holds the current Excel com Application, and more are Officer.Word, Officer.Powerpoint, Office.Visio, Officer.Access, Officer.OneNote, Officer.Visio, Officer.Project. Office.Kwps for WPS word, Office.Ket for WPS excell, Office.Kwpp for WPS powerpoint.
-    - There is an object "output" as RunPython(...) return that can be used in the python code, to put your own return result in to output, like output="run python sccessed", then RunPython return "run python sccessed" to AI model.
-    - You can use Officer.Visio to create a new Visio document, and then use Officer.Visio.ActivePage to get the active page, and use Officer.Visio.ActivePage.DrawRectangle(...) to draw a rectangle on the page.
-    - You can use Officer.Excel to create a new Excel document, and then use Officer.Excel.ActiveSheet to get the active sheet, and use Officer.Excel.ActiveSheet.Cells(...) to get the cell, and use Officer.Excel.ActiveSheet.Cells(...).Value = "hello" to set the cell value.
-    - You use codes to control them by running the codes with RunPython tool.
-
-- More tools will be added in the future.
-
-
-## Development
-```bash
-git clone https://github.com/officemcp/officemcp
+manifest.json          gateway/CP18 manifest contract
+run_server.py          gateway entrypoint (adapter wiring)
+officemcp/             adapted upstream package
+  OfficeMCP.py         MCP server (RunPython removed, stderr logging, fixes)
+  Officer.py           COM layer (lazy Windows imports)
+  aioconnect.py        AiConnect adapter (license + envelope)
+  fake_officer.py      COM-free test double
+tests/
+  check_aioconnect.py  adapter unit checks (no pytest)
+  process_manager/     PM compatibility harness (fake_license + 5 suites)
 ```

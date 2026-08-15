@@ -4,3 +4,6 @@ disk/
 my/
 sources/
 src/officemcp/__pycache__/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -1,10 +1,21 @@
-import winreg
-import asyncio
-import pywintypes
 import os,sys
-import win32com.client
 from pathlib import Path
-from fastmcp.resources import FileResource, TextResource, DirectoryResource
+
+# AiConnect: Windows-only imports are LAZY (called inside methods) so the MCP
+# server boots headless on non-Windows (tools/list + envelope work; only
+# Office-touching tools fail with a structured TOOL_ERROR off-Windows).
+def _com():
+    import win32com.client
+    return win32com.client
+
+def _pywintypes():
+    import pywintypes
+    return pywintypes
+
+def _winreg():
+    import winreg
+    return winreg
+
 class TheOfficer:
     def __init__(self):
         self._excel = None
@@ -49,9 +60,9 @@ class TheOfficer:
         comobject = self.ComObjects.get(com_name)
         if comobject is None:
             try:
-                comobject=win32com.client.GetActiveObject(com_name)
+                comobject=_com().GetActiveObject(com_name)
             except Exception as e:
-                comobject=win32com.client.Dispatch(com_name)
+                comobject=_com().Dispatch(com_name)
             self.ComObjects[com_name]=comobject
         return comobject
 
@@ -99,9 +110,9 @@ class TheOfficer:
     def Print(self, obj):
         if self._printable:
             try:              
-                print(obj)
+                print(obj, file=sys.stderr)
             except Exception as e:
-                print(e)
+                print(e, file=sys.stderr)
 
     def Visible(self, app_name: str, visible = None) -> bool:
         """Check if the specified application is visible."""
@@ -163,14 +174,14 @@ class TheOfficer:
             except Exception as e:
                 print(e)
         if asNewInstance:
-            app = win32com.client.Dispatch(com_full_name)
+            app = _com().Dispatch(com_full_name)
             self.__dict__[app_name_attr] = app
             return app
         else:
             try:
-                app = win32com.client.GetActiveObject(com_full_name)
-            except pywintypes.com_error:
-                app = win32com.client.Dispatch(com_full_name)
+                app = _com().GetActiveObject(com_full_name)
+            except _pywintypes().com_error:
+                app = _com().Dispatch(com_full_name)
             self.__dict__[app_name_attr] = app
             return app
 
@@ -191,14 +202,14 @@ class TheOfficer:
             return None
         app_full_name = app_name + ".Application"#
         if asNewInstance:
-            app = win32com.client.Dispatch(app_full_name)
+            app = _com().Dispatch(app_full_name)
             self.__dict__[app_name_attr] = app
             return app
         else:
             try:
-                app = win32com.client.GetActiveObject(app_full_name)
-            except pywintypes.com_error:
-                app = win32com.client.Dispatch(app_full_name)
+                app = _com().GetActiveObject(app_full_name)
+            except _pywintypes().com_error:
+                app = _com().Dispatch(app_full_name)
             self.__dict__[app_name_attr] = app
             return app
 
@@ -206,10 +217,10 @@ class TheOfficer:
         apps = []
         for prog_id in self.MicrosoftApplications:
             try:
-                app = win32com.client.GetActiveObject(prog_id + ".Application")
+                app = _com().GetActiveObject(prog_id + ".Application")
                 if app is not None:
                     apps.append(prog_id)
-            except (FileNotFoundError, pywintypes.com_error):
+            except (FileNotFoundError, _pywintypes().com_error):
                 continue
             except Exception as e:
                 print(f"[DEBUG] Error verifying {prog_id}: {str(e)}")
@@ -220,10 +231,10 @@ class TheOfficer:
         for prog_id in self.MicrosoftApplications:
             try:
                 # Registry verification
-                with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, prog_id+".Application"):
+                with _winreg().OpenKey(_winreg().HKEY_CLASSES_ROOT, prog_id+".Application"):
                     pass
                 apps.append(prog_id)            
-            except (FileNotFoundError, pywintypes.com_error):
+            except (FileNotFoundError, _pywintypes().com_error):
                 continue
             except Exception as e:
                 print(f"[DEBUG] Error verifying {prog_id}: {str(e)}")            
@@ -233,7 +244,7 @@ class TheOfficer:
         try:
             if not app_name.endswith(".Application"):
                 app_name=app_name+".Application"
-            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, app_name):
+            with _winreg().OpenKey(_winreg().HKEY_CLASSES_ROOT, app_name):
                 pass
             return True
         except Exception as e:

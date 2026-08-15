@@ -1,0 +1,22 @@
+{
+  "id": "office-mcp",
+  "name": "Office Connector",
+  "version": "1.0.5",
+  "manifest_schema_version": 1,
+  "package_format_version": 1,
+  "platform": {
+    "os": "windows",
+    "arch": "x64"
+  },
+  "runtime": "python",
+  "entry": "run_server.py",
+  "min_app_version": "0.4.0",
+  "entitlement_tier": "pro",
+  "port_env_var": "MCP_PORT",
+  "token_env_var": "MCP_LICENSE_TOKEN",
+  "stdio": true,
+  "platform_requirements": {
+    "windows": ["Windows 10/11", "Microsoft Office installed (COM automation)"],
+    "com": ["Office apps must be installed for COM tools; MCP server starts fine without them (structured TOOL_ERROR off-Windows)"]
+  }
+}
