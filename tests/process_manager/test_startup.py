@@ -7,7 +7,7 @@ No COM/Office/license is touched.
 """
 import json
 
-from fake_license import mcp_initialize, mcp_tools_list, spawn_server, stop
+from fake_license import SECRET, mcp_initialize, mcp_tools_list, mint, spawn_server, stop
 
 # 13 curated tools — upstream RunPython tool REMOVED (see README security
 # posture). ReadME + Instructions are resources, not tools.
@@ -78,6 +78,33 @@ def test_tool_dispatch_through_fake_officer():
         resp = json.loads(proc.stdout.readline().decode())
         content = resp["result"]["content"][0]["text"]
         assert "true" in content
+    finally:
+        stop(proc)
+
+
+def test_tool_dispatch_enveloped():
+    """Adapter-mode tool call must return an ok envelope through the
+    low-level interceptor — regression for the FastMCP 3.4.7 wrapped-call
+    failure (JSON-string return vs frozen output-model validation)."""
+    proc = spawn_server(env_extra={
+        "AICONNECT_ENABLE": "1",
+        "JWT_SECRET": SECRET,
+        "MCP_LICENSE_TOKEN": mint(),
+    })
+    try:
+        mcp_initialize(proc)
+        assert proc.stdin is not None
+        req = {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {"name": "AvailableApps", "arguments": {}},
+        }
+        proc.stdin.write((json.dumps(req) + "\n").encode())
+        proc.stdin.flush()
+        resp = json.loads(proc.stdout.readline().decode())
+        content = resp["result"]["content"][0]["text"]
+        assert '"success":' in content and '"data"' in content, f"expected ok envelope, got: {content[:200]}"
     finally:
         stop(proc)
 

@@ -122,9 +122,13 @@ def _wrap(fn):
 
 
 def wrap_tools(mcp) -> int:
-    """Centrally wrap every registered tool. FastMCP 1.x exposes
-    mcp._tool_manager._tools; tolerate a bare registry dict too. Degrades to
-    license-only if the internals change."""
+    """Legacy per-tool fn swap (FastMCP <3.x / fastmcp 1.x fallback).
+
+    Do NOT use on FastMCP 3.4.7: replacing tool.fn keeps the frozen
+    fn_metadata output model, so a wrapped JSON-string return fails
+    structured-output validation (DictModel input_type=str). Prefer
+    install_call_interceptor on 3.x.
+    """
     if not _enabled():
         return 0
     registry = None
@@ -154,3 +158,56 @@ def wrap_tools(mcp) -> int:
             registry[name] = wrapped_fn
         wrapped += 1
     return wrapped
+
+
+def install_envelope_middleware(mcp) -> bool:
+    """Install a tools/call envelope middleware via FastMCP's SUPPORTED API.
+
+    This FastMCP class (fastmcp.server.server.FastMCP 3.x) exposes a first-
+    class middleware system (mcp.add_middleware). Our middleware:
+      1. per-call license recheck + binding (fail → LICENSE envelope),
+      2. delegates to the next handler (full validation/conversion — tools
+         stay untouched: fn/signature/schema intact),
+      3. envelopes the ToolResult content (ok/fail) — replacing tool.fn
+         here breaks on FastMCP 3.4.7 (JSON-string return vs frozen
+         output-model validation).
+
+    Returns True when installed; False when unavailable/disabled — caller
+    falls back to wrap_tools (fastmcp <3.x / mcp-SDK FastMCP without this
+    middleware API use the low-level call_tool interceptor instead).
+    """
+    if not _enabled():
+        return False
+    if not hasattr(mcp, "add_middleware"):
+        print("aioconnect: add_middleware not available — middleware skipped", file=sys.stderr)
+        return False
+
+    from fastmcp.server.middleware import Middleware
+    from fastmcp.tools.base import ToolResult
+    from mcp.types import CallToolRequestParams, TextContent
+
+    class _EnvelopeMiddleware(Middleware):
+        async def on_call_tool(self, context: CallToolRequestParams, call_next) -> ToolResult:
+            try:
+                _validate()  # per-call recheck + binding
+            except LicenseError as e:
+                return ToolResult(content=[TextContent(type="text", text=json.dumps(fail("LICENSE", str(e))))])
+            try:
+                result = await call_next(context)
+            except Exception as e:
+                return ToolResult(content=[TextContent(type="text", text=json.dumps(fail("TOOL_ERROR", str(e))))])
+            text = ""
+            for block in (result.content or []):
+                if getattr(block, "type", None) == "text":
+                    text = getattr(block, "text", "") or ""
+                    break
+            if not text:
+                payload = result.structured_content
+                text = json.dumps(payload if payload is not None else result, default=str)
+            return ToolResult(
+                content=[TextContent(type="text", text=_wrap_result(text))],
+                structured_content=result.structured_content,
+            )
+
+    mcp.add_middleware(_EnvelopeMiddleware())
+    return True

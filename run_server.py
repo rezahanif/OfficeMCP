@@ -19,7 +19,11 @@ from officemcp.OfficeMCP import mcp, RunOfficeMCP  # noqa: E402
 def main() -> None:
     if aioconnect is not None:
         aioconnect.ensure_licensed()
-        aioconnect.wrap_tools(mcp)
+        # FastMCP 3.x: envelope via the server's SUPPORTED middleware API
+        # (tools stay untouched — envelope applied post-validation).
+        # Fallback: legacy per-tool wrap for fastmcp <3.x.
+        if not aioconnect.install_envelope_middleware(mcp):
+            aioconnect.wrap_tools(mcp)
     RunOfficeMCP()
 
 
