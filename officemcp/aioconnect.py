@@ -18,6 +18,7 @@ Security posture (D1 decision, 2026-08-15): the upstream RunPython tool
 lifecycle/query tools remain — no arbitrary Python execution.
 """
 import asyncio
+import functools
 import json
 import os
 import sys
@@ -84,7 +85,10 @@ async def _call(fn, args, kwargs):
 def _make_sync_wrapper(fn):
     """For SYNC-registered tools: FastMCP freezes is_async at registration, so
     replacing tool.fn with an async wrapper makes FastMCP call it synchronously
-    and leak a coroutine. Sync tools get a sync wrapper instead."""
+    and leak a coroutine. Sync tools get a sync wrapper instead.
+    functools.wraps preserves the ORIGINAL signature via __wrapped__ — FastMCP
+    3.x derives input model/ctx injection from inspect.signature."""
+    @functools.wraps(fn)
     def _w(*args, **kwargs):
         if not _enabled():
             return fn(*args, **kwargs)
@@ -102,6 +106,7 @@ def _wrap(fn):
     if not asyncio.iscoroutinefunction(fn):
         return _make_sync_wrapper(fn)
 
+    @functools.wraps(fn)
     async def _w(*args, **kwargs):
         if not _enabled():
             return await _call(fn, args, kwargs)
