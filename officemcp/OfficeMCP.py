@@ -1,6 +1,10 @@
 # coding=utf-8
+import json
 import os
 import sys
+from pathlib import Path
+from typing import Literal
+
 from fastmcp import FastMCP
 from fastmcp.resources import TextResource
 from officemcp.Officer import TheOfficer
@@ -43,8 +47,11 @@ def RunningApps() -> list:
     return Officer.RunningApps()
 
 @mcp.tool()
-def IsAppAvailable(app_name: str = "Word") -> bool:
-    """ Check if the specified application is installed."""
+def IsAppAvailable(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word") -> bool:
+    """Check if the specified Office application is installed.
+
+    app_name: Application name. Requires Windows + the app installed (COM).
+    """
     return Officer.IsAppAvailable(app_name)
 
 
@@ -62,21 +69,24 @@ def RootFolder() -> str:
 
 
 @mcp.tool()
-def Visible(app_name: str="Word", visible: bool = True) -> bool:
-    """ Check if the microsoft excel application is visible."""
+def Visible(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word", visible: bool = True) -> bool:
+    """Show or hide an Office application window.
+
+    app_name: Application name. Requires Windows + the app running (COM).
+    visible: True to show the window, False to hide it.
+    """
     return Officer.Visible(app_name,visible)
 
 @mcp.tool()
-def Launch(app_name: str ="Word", visible: bool = True)->dict:
-    """ Launch a new Microsoft Office application or use the existing one.
-    
-    Args:
-        app_name: Office application name (Word, Excel, PowerPoint, etc.)
-        visible: Whether to show the application window
-    
+def Launch(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word", visible: bool = True) -> dict:
+    """Launch an Office application or attach to the running instance.
+
+    app_name: Application name. Requires Windows + the app installed (COM).
+    visible: Whether to show the application window.
+
     Returns:
         dict with success status and details
-    
+
     Raises:
         AppNotInstalledError: if the application is not installed
         COMConnectionError: if COM automation is unavailable
@@ -138,8 +148,12 @@ def IsFileExists(sub_file_path: str) -> bool:
     return Officer.IsFileExists(sub_file_path)
 
 @mcp.tool()
-def Quit(app_name: str="Word",force:bool=False)->bool:
-    """ Quit the microsoft excel application."""
+def Quit(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word", force: bool = False) -> bool:
+    """Quit an Office application.
+
+    app_name: Application name. Requires Windows + the app running (COM).
+    force: True to close without saving prompts.
+    """
     _log('Tool.Quit:')
     return Officer.Quit(app_name,force)
 
@@ -191,8 +205,12 @@ def get_error_hints(error_code: str = None) -> dict:
     return {"error_types": list(ERROR_HINTS.keys()), "hints": ERROR_HINTS}
 
 @mcp.tool()
-def Beep(frequency:int=500,duration:int=500)->bool:
-    """ Beep the computer. frequency range is 37 to 32767, duration range is 0 to 65535."""
+def Beep(frequency: int = 500, duration: int = 500) -> bool:
+    """Beep the PC speaker.
+
+    frequency: Tone frequency in Hz (37-32767). Default 500 Hz.
+    duration: Duration in milliseconds (0-65535). Default 500 ms.
+    """
     _log('Tool.Beep:')
     return Officer.Beep(frequency, duration)
     
@@ -357,6 +375,119 @@ def pptx_add_slide(path: str, title: str, content: str | None = None) -> dict:
 def pptx_get_info(path: str) -> dict:
     """Read presentation metadata: title, author, slide count, dimensions (EMU)."""
     return _docs.pptx_get_info(path)
+
+# endregion
+
+# region Layer B — API guidance tools (AiConnect Phase 1) ---------------
+#
+# Fallback path: when no dedicated tool covers the intent, the agent
+# searches the Office API docs, composes code, and registers the verified
+# pattern so future agents find it directly.
+
+from officemcp.doc_search import doc_index as _doc_index  # noqa: E402
+from officemcp.function_registry import registry as _registry  # noqa: E402
+
+_TEMPLATES_PATH = Path(__file__).resolve().parent.parent / "templates" / "templates.json"
+
+
+def _load_templates() -> dict:
+    try:
+        return json.loads(Path(_TEMPLATES_PATH).read_text(encoding="utf-8")).get("templates", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+@mcp.tool()
+def search_office_api(query: str, category: str | None = None) -> list[dict]:
+    """Search the Office API documentation for objects/methods matching a query.
+
+    query: What you need (e.g. "open workbook", "add slide", "replace text").
+    category: Optional — restrict via list_office_api_categories results.
+
+    Use BEFORE writing custom automation: returns object names, syntax,
+    descriptions, and examples for both the COM model and cross-platform
+    OOXML libraries.
+    """
+    return _doc_index.search(query=query, category=category)
+
+
+@mcp.tool()
+def list_office_api_categories() -> list[dict]:
+    """List available Office API documentation categories with section counts.
+
+    Returns [{category, sections}] — e.g. Excel Worksheet Object (5).
+    """
+    return _doc_index.list_categories()
+
+
+@mcp.tool()
+def office_function_registry_query(
+    function_path: str | None = None,
+    category: str | None = None,
+    verified_only: bool = False,
+    query: str | None = None,
+) -> dict:
+    """Query the registry of verified Office API patterns.
+
+    Modes: no args = summary; function_path = one detail; category/query/
+    verified_only = filtered list. Verified entries record working call
+    patterns and pitfalls discovered by earlier agents.
+    """
+    if function_path:
+        fn = _registry.get_function(function_path)
+        if fn is None:
+            return {"error": f"Unknown function: {function_path}", "registered": False}
+        return {"registered": True, **fn}
+    matches = _registry.list_functions(category=category, verified_only=verified_only, query=query)
+    return {"summary": _registry.get_summary(), "functions": matches}
+
+
+@mcp.tool()
+def register_verified_office(
+    function_path: str,
+    category: str,
+    description: str = "",
+    signature: str = "",
+    parameter_notes: str = "",
+    notes: str = "",
+) -> dict:
+    """Register a verified Office API pattern so future agents reuse it.
+
+    Call AFTER successfully running an operation. Records the exact call
+    signature and any pitfalls. Only register what actually worked.
+    """
+    result = _registry.register_function(
+        function_path=function_path,
+        category=category,
+        description=description,
+        signature=signature,
+        parameter_notes=parameter_notes,
+        notes=notes,
+    )
+    _registry.mark_verified(function_path)
+    return result
+
+
+@mcp.tool()
+def list_templates() -> list[dict]:
+    """List ready-to-run Office document templates (report skeleton, data table,
+    outline deck, find/replace...). Pair with load_template for full code."""
+    return [
+        {"id": tid, "name": t["name"], "description": t["description"], "category": t["category"]}
+        for tid, t in sorted(_load_templates().items())
+    ]
+
+
+@mcp.tool()
+def load_template(template_id: str) -> dict:
+    """Load one template's full tool-call sequence by id (from list_templates).
+
+    The sequences are verified — adapt file names to yours.
+    """
+    t = _load_templates().get(template_id)
+    if t is None:
+        return {"error": f"Unknown template: {template_id}", "available": sorted(_load_templates())}
+    return {"id": template_id, **t}
 
 # endregion
 

@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "templates": {
+    "word_report_skeleton": {
+      "name": "Word Report Skeleton",
+      "description": "Title + headings + body paragraphs — a complete document outline in one pass.",
+      "category": "Word",
+      "code": "doc_create('report.docx')\ndoc_add_heading('report.docx', 'Quarterly Report', level=0)\ndoc_add_heading('report.docx', 'Summary', level=1)\ndoc_add_paragraph('report.docx', 'Overall performance was on target.')\ndoc_add_heading('report.docx', 'Details', level=1)\ndoc_add_table('report.docx', rows=[['Q1', '120'], ['Q2', '135']], headers=['Quarter', 'Revenue'])"
+    },
+    "word_find_replace": {
+      "name": "Word Find & Replace",
+      "description": "Global placeholder replacement across paragraphs and tables.",
+      "category": "Word",
+      "code": "doc_replace_text('contract.docx', '{{CLIENT_NAME}}', 'Acme Corp')\ndoc_replace_text('contract.docx', '{{DATE}}', '2026-08-23')"
+    },
+    "excel_data_table": {
+      "name": "Excel Data Table",
+      "description": "Write headers + data rows to a new workbook in one flow.",
+      "category": "Excel",
+      "code": "xlsx_create('sales.xlsx')\nxlsx_write_cells('sales.xlsx', 'Sheet1', 'A1', [\n    ['region', 'units', 'revenue'],\n    ['north', 150, 45000],\n    ['south', 180, 54000],\n])"
+    },
+    "excel_append_log": {
+      "name": "Excel Append Log",
+      "description": "Append timestamped entries to a log sheet without touching existing rows.",
+      "category": "Excel",
+      "code": "xlsx_append_rows('book.xlsx', 'Log', [['2026-08-23', 'import finished', 42]])"
+    },
+    "pptx_outline_deck": {
+      "name": "PowerPoint Outline Deck",
+      "description": "Create a deck and add title+content slides for each section.",
+      "category": "PowerPoint",
+      "code": "pptx_create('briefing.pptx')\npptx_add_slide('briefing.pptx', 'Agenda', 'Intro\\nStatus\\nNext steps')\npptx_add_slide('briefing.pptx', 'Status', 'All milestones on track.')\npptx_add_slide('briefing.pptx', 'Next steps', 'Ship v2 by Friday.')"
+    }
+  }
+}
