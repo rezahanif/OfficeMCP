@@ -4,6 +4,10 @@ import sys
 from fastmcp import FastMCP
 from fastmcp.resources import TextResource
 from officemcp.Officer import TheOfficer
+from officemcp.errors import (
+    COMConnectionError, AppNotInstalledError, AppNotRunningError,
+    FileOperationError, ScreenshotError, TTSError, OfficeError, ERROR_HINTS,
+)
 
 
 def _log(*args):
@@ -63,29 +67,66 @@ def Visible(app_name: str="Word", visible: bool = True) -> bool:
     return Officer.Visible(app_name,visible)
 
 @mcp.tool()
-def Launch(app_name: str ="Word", visible: bool = True)->bool:
-    """ Launch an new microsoft excel application or use the existed one."""
+def Launch(app_name: str ="Word", visible: bool = True)->dict:
+    """ Launch a new Microsoft Office application or use the existing one.
+    
+    Args:
+        app_name: Office application name (Word, Excel, PowerPoint, etc.)
+        visible: Whether to show the application window
+    
+    Returns:
+        dict with success status and details
+    
+    Raises:
+        AppNotInstalledError: if the application is not installed
+        COMConnectionError: if COM automation is unavailable
+    """
     Officer.Print('Tool.Launch....')
     try:
+        if not Officer.IsAppAvailable(app_name):
+            raise AppNotInstalledError(
+                f"{app_name} is not installed",
+                details={"available_apps": Officer.AvailableApps()},
+            )
         app = Officer.Application(app_name)
         app.Visible = visible
         Officer.Print('    Launched:')
-        return True
+        return {"success": True, "app": app_name, "visible": visible}
+    except OfficeError:
+        raise
     except Exception as e:
-        Officer.Print(f'    failed{e}:')
-        return False
+        raise COMConnectionError(
+            f"Failed to launch {app_name}: {e}",
+            details={"app_name": app_name},
+        ) from e
 
 @mcp.tool()
-def ScreenShot(save_path: str = None) -> str:
-    """ Launch an new microsoft excel application or use the existed one."""
+def ScreenShot(save_path: str = None) -> dict:
+    """Capture a screenshot of the entire screen.
+    
+    Args:
+        save_path: Optional file path to save the screenshot
+    
+    Returns:
+        dict with path to saved screenshot
+    
+    Raises:
+        ScreenshotError: if screen capture fails
+    """
     Officer.Print('Tool.ScreenShot....')
     try:
         path = Officer.ScreenShot(save_path)
+        if not path:
+            raise ScreenshotError("Screen capture returned empty path")
         Officer.Print(f'   saved to {path}: ')
-        return path
+        return {"success": True, "path": path}
+    except OfficeError:
+        raise
     except Exception as e:
-        Officer.Print(f'   failed {e}: ')
-        return ""
+        raise ScreenshotError(
+            f"Screen capture failed: {e}",
+            details={"save_path": save_path},
+        ) from e
 
 @mcp.resource("resource://README.md")
 def ReadME() -> TextResource:
@@ -103,10 +144,51 @@ def Quit(app_name: str="Word",force:bool=False)->bool:
     return Officer.Quit(app_name,force)
 
 @mcp.tool()
-def Speak(text: str = "I'm office mcp server , how are you", volume: int = 80, rate: int = 0)->bool:
-    """ Speak the text. volume range is 0-100, rate range is -10 to 10."""
+def Speak(text: str = "I'm office mcp server , how are you", volume: int = 80, rate: int = 0)->dict:
+    """ Speak the text using Windows SAPI.
+    
+    Args:
+        text: Text to speak
+        volume: Volume level (0-100)
+        rate: Speech rate (-10 to 10)
+    
+    Returns:
+        dict with success status
+    
+    Raises:
+        TTSError: if speech synthesis fails
+    """
     _log('Tool.Speak:')
-    return Officer.Speak(text, volume, rate)
+    try:
+        result = Officer.Speak(text, volume, rate)
+        if not result:
+            raise TTSError("Speech synthesis returned false")
+        return {"success": True, "text": text[:50]}
+    except OfficeError:
+        raise
+    except Exception as e:
+        raise TTSError(
+            f"Speech synthesis failed: {e}",
+            details={"text": text[:50], "volume": volume, "rate": rate},
+        ) from e
+
+
+@mcp.tool()
+def get_error_hints(error_code: str = None) -> dict:
+    """Get recovery hints for a specific error code or all error types.
+    
+    Args:
+        error_code: Optional error code to get hints for (e.g. "com_connection")
+    
+    Returns:
+        dict with error hints and recovery guidance
+    """
+    if error_code:
+        hint = ERROR_HINTS.get(error_code)
+        if hint:
+            return {"error_code": error_code, **hint}
+        return {"error_code": error_code, "hint": "No hints available for this error code"}
+    return {"error_types": list(ERROR_HINTS.keys()), "hints": ERROR_HINTS}
 
 @mcp.tool()
 def Beep(frequency:int=500,duration:int=500)->bool:
@@ -120,21 +202,161 @@ def Demonstrate()->dict:
     _log('Tool.Demonstrate:')
     output = ""
     try:
-        output = Officer.Demonstrate()    
+        output = Officer.Demonstrate()
         return {"success": True, "output": output}
     except Exception as e:
         _log(e)
         return {"success": False, "error": str(e), "output": output}
 
-@mcp.resource("resource://Instructions")
-def Instructions() -> str:
-    return """
-    There're some base tools for you to control Microsoft applications.
-    Use tool AvailableApps / RunningApps / IsAppAvailable to check applications.
-    Use tool Launch / Visible / Quit to control application lifecycle.
-    Use tool ScreenShot to capture the screen.
-    Use tool Speak / Beep for simple feedback.
+# endregion
+
+# region Document CRUD (OOXML — cross-platform, no COM) ---------------
+#
+# AiConnect Phase 1: dedicated document manipulation tools built on
+# python-docx / openpyxl / python-pptx. These read/write .docx/.xlsx/.pptx
+# files directly (OOXML = ZIP+XML) and work on ANY OS without Office
+# installed. Complements the 13 Windows-only COM lifecycle tools above.
+# Security posture unchanged: pure library file operations, no exec.
+
+from typing import Any as _Any
+
+from officemcp import documents as _docs
+
+
+# --- Word (.docx) ---
+
+@mcp.tool()
+def doc_create(path: str) -> dict:
+    """Create a new empty Word document (.docx).
+
+    path: File path relative to the connector root folder (or absolute).
+    Works on any OS — no Office installation required.
     """
+    return _docs.doc_create(path)
+
+@mcp.tool()
+def doc_read(path: str) -> dict:
+    """Read all paragraph texts and tables from a Word document (.docx).
+
+    Returns {paragraphs: [str], tables: [[[str]]], counts}. Cross-platform.
+    """
+    return _docs.doc_read(path)
+
+@mcp.tool()
+def doc_add_paragraph(path: str, text: str, style: str | None = None) -> dict:
+    """Append a paragraph to a Word document (.docx).
+
+    style: Optional style name like "Normal", "Quote", "List Bullet".
+    """
+    return _docs.doc_add_paragraph(path, text, style)
+
+@mcp.tool()
+def doc_add_heading(path: str, text: str, level: int = 1) -> dict:
+    """Add a heading to a Word document (.docx).
+
+    level: Heading level 0-4 (0 = Title, 1 = Heading 1, ...).
+    """
+    return _docs.doc_add_heading(path, text, level)
+
+@mcp.tool()
+def doc_add_table(path: str, rows: list[list[str]], headers: list[str] | None = None) -> dict:
+    """Append a table to a Word document (.docx).
+
+    rows: 2D array of cell strings.
+    headers: Optional first-row header labels (prepended to rows).
+    """
+    return _docs.doc_add_table(path, rows, headers)
+
+@mcp.tool()
+def doc_replace_text(path: str, find: str, replace: str) -> dict:
+    """Replace all occurrences of find with replace across paragraphs and table cells.
+
+    Returns the number of replacements made. Handles both simple runs and
+    split-run paragraphs (Word splits text arbitrarily across XML runs).
+    """
+    return _docs.doc_replace_text(path, find, replace)
+
+@mcp.tool()
+def doc_get_properties(path: str) -> dict:
+    """Read core properties of a Word document (.docx): title, author, dates, counts."""
+    return _docs.doc_get_properties(path)
+
+
+# --- Excel (.xlsx) ---
+
+@mcp.tool()
+def xlsx_create(path: str) -> dict:
+    """Create a new Excel workbook (.xlsx) with one default sheet. Cross-platform."""
+    return _docs.xlsx_create(path)
+
+@mcp.tool()
+def xlsx_read_cells(path: str, sheet: str | None = None, cell_range: str | None = None) -> dict:
+    """Read cell values from an Excel workbook (.xlsx).
+
+    sheet: Sheet name (default: first sheet).
+    cell_range: Optional A1-style range ("A1:C10") or single cell ("B2").
+                Omit to read all non-empty rows.
+    """
+    return _docs.xlsx_read_cells(path, sheet, cell_range)
+
+@mcp.tool()
+def xlsx_write_cells(path: str, sheet: str, start_cell: str, data: list[list[_Any]]) -> dict:
+    """Write a 2D array of values starting at start_cell on the named sheet.
+
+    start_cell: A1-style anchor ("A1"). Creates the sheet if missing.
+    data: 2D array; numbers stay numbers, strings stay strings.
+    """
+    return _docs.xlsx_write_cells(path, sheet, start_cell, data)
+
+@mcp.tool()
+def xlsx_list_sheets(path: str) -> dict:
+    """List all sheet names in an Excel workbook (.xlsx)."""
+    return _docs.xlsx_list_sheets(path)
+
+@mcp.tool()
+def xlsx_add_sheet(path: str, name: str) -> dict:
+    """Add a new sheet to an Excel workbook (.xlsx). Fails if the name exists."""
+    return _docs.xlsx_add_sheet(path, name)
+
+@mcp.tool()
+def xlsx_append_rows(path: str, sheet: str, rows: list[list[_Any]]) -> dict:
+    """Append rows at the end of a sheet (creates the sheet if missing)."""
+    return _docs.xlsx_append_rows(path, sheet, rows)
+
+@mcp.tool()
+def xlsx_get_properties(path: str) -> dict:
+    """Read workbook metadata: title, creator, created date, sheet list."""
+    return _docs.xlsx_get_properties(path)
+
+
+# --- PowerPoint (.pptx) ---
+
+@mcp.tool()
+def pptx_create(path: str) -> dict:
+    """Create a new presentation (.pptx) with one blank title slide. Cross-platform."""
+    return _docs.pptx_create(path)
+
+@mcp.tool()
+def pptx_read(path: str) -> dict:
+    """Extract all text from every slide of a presentation (.pptx).
+
+    Returns [{index, texts: [str]}] per slide, including table cell text.
+    """
+    return _docs.pptx_read(path)
+
+@mcp.tool()
+def pptx_add_slide(path: str, title: str, content: str | None = None) -> dict:
+    """Add a slide with a title and optional body content to a presentation (.pptx).
+
+    content: Body paragraph text. Placed in the layout's body placeholder,
+    or a new textbox if the layout has none.
+    """
+    return _docs.pptx_add_slide(path, title, content)
+
+@mcp.tool()
+def pptx_get_info(path: str) -> dict:
+    """Read presentation metadata: title, author, slide count, dimensions (EMU)."""
+    return _docs.pptx_get_info(path)
 
 # endregion
 
