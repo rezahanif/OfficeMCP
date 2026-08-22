@@ -20,13 +20,25 @@ Adapted from upstream [OfficeMCP/OfficeMCP](https://github.com/OfficeMCP/OfficeM
 
 Upstream `RunPython` (unrestricted `exec()` with builtins + full COM `Officer`
 in scope) is **REMOVED from the MCP surface**. The connector exposes only the
-curated lifecycle/query tools:
+curated lifecycle/query tools plus cross-platform document CRUD:
 
+**COM lifecycle (Windows-only, 13 tools):**
 `AvailableApps, RunningApps, IsAppAvailable, DownloadImage, RootFolder,
 Visible, Launch, ScreenShot, IsFileExists, Quit, Speak, Beep, Demonstrate`
 
-No arbitrary Python execution. Project/advanced document automation (reachable
-upstream only via RunPython) is NOT exposed.
+**Document CRUD (cross-platform OOXML, 18 tools):**
+`doc_create, doc_read, doc_add_paragraph, doc_add_heading, doc_add_table,
+doc_replace_text, doc_get_properties` (python-docx) ·
+`xlsx_create, xlsx_read_cells, xlsx_write_cells, xlsx_list_sheets,
+xlsx_add_sheet, xlsx_append_rows, xlsx_get_properties` (openpyxl) ·
+`pptx_create, pptx_read, pptx_add_slide, pptx_get_info` (python-pptx)
+
+**API guidance (Layer B, 7 tools):**
+`search_office_api, list_office_api_categories, office_function_registry_query,
+register_verified_office, list_templates, load_template, get_error_hints`
+
+No arbitrary execution anywhere. Document CRUD is pure library file
+operations on OOXML files (ZIP+XML) — no COM, no Office install required.
 
 ## AiConnect integration
 
