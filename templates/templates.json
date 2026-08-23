@@ -3,7 +3,7 @@
   "templates": {
     "word_report_skeleton": {
       "name": "Word Report Skeleton",
-      "description": "Title + headings + body paragraphs — a complete document outline in one pass.",
+      "description": "Title + headings + body paragraphs \u2014 a complete document outline in one pass.",
       "category": "Word",
       "code": "doc_create('report.docx')\ndoc_add_heading('report.docx', 'Quarterly Report', level=0)\ndoc_add_heading('report.docx', 'Summary', level=1)\ndoc_add_paragraph('report.docx', 'Overall performance was on target.')\ndoc_add_heading('report.docx', 'Details', level=1)\ndoc_add_table('report.docx', rows=[['Q1', '120'], ['Q2', '135']], headers=['Quarter', 'Revenue'])"
     },
@@ -30,6 +30,42 @@
       "description": "Create a deck and add title+content slides for each section.",
       "category": "PowerPoint",
       "code": "pptx_create('briefing.pptx')\npptx_add_slide('briefing.pptx', 'Agenda', 'Intro\\nStatus\\nNext steps')\npptx_add_slide('briefing.pptx', 'Status', 'All milestones on track.')\npptx_add_slide('briefing.pptx', 'Next steps', 'Ship v2 by Friday.')"
+    },
+    "project_create_schedule": {
+      "name": "Create Project Schedule",
+      "description": "Create a new project with tasks, dependencies, and resources",
+      "tools": [
+        "msp_create",
+        "msp_add_task",
+        "msp_update_task",
+        "msp_add_resource",
+        "msp_assign_resource",
+        "msp_set_baseline"
+      ],
+      "steps": [
+        "1. msp_create \u2014 create new .mpp file",
+        "2. msp_add_task \u2014 add tasks with duration and predecessors",
+        "3. msp_update_task \u2014 set task dependencies",
+        "4. msp_add_resource \u2014 add work resources",
+        "5. msp_assign_resource \u2014 assign resources to tasks",
+        "6. msp_set_baseline \u2014 save baseline",
+        "7. msp_save \u2014 save the project"
+      ]
+    },
+    "project_track_progress": {
+      "name": "Track Project Progress",
+      "description": "Update task progress and compare against baseline",
+      "tools": [
+        "msp_get_project_info",
+        "msp_get_tasks",
+        "msp_update_task"
+      ],
+      "steps": [
+        "1. msp_get_project_info \u2014 check current state",
+        "2. msp_get_tasks \u2014 list tasks with percent complete",
+        "3. msp_update_task \u2014 update percent_complete",
+        "4. msp_save \u2014 save changes"
+      ]
     }
   }
 }

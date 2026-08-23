@@ -491,6 +491,134 @@ def load_template(template_id: str) -> dict:
 
 # endregion
 
+# region Microsoft Project tools ------------------------------------------
+
+import officemcp.project as _proj
+
+
+@mcp.tool()
+def msp_create(path: str) -> dict:
+    """Create a new blank Microsoft Project file (.mpp)."""
+    return _proj.msp_create(path)
+
+
+@mcp.tool()
+def msp_open(path: str) -> dict:
+    """Open an existing .mpp project file."""
+    return _proj.msp_open(path)
+
+
+@mcp.tool()
+def msp_save(path: str | None = None) -> dict:
+    """Save the active project. Pass path to SaveAs."""
+    return _proj.msp_save(path)
+
+
+@mcp.tool()
+def msp_close(save: bool = True) -> dict:
+    """Close the active project."""
+    return _proj.msp_close(save)
+
+
+@mcp.tool()
+def msp_add_task(
+    name: str,
+    duration: str | None = None,
+    start: str | None = None,
+    predecessors: str | None = None,
+    notes: str | None = None,
+) -> dict:
+    """Add a task. Duration: '3d', '1w', '4h'. Predecessors: '1,3FS+2d'."""
+    return _proj.msp_add_task(name, duration, start, predecessors, notes)
+
+
+@mcp.tool()
+def msp_get_tasks(
+    filter_name: str | None = None,
+    field: str | None = None,
+    max_results: int = 50,
+) -> dict:
+    """List tasks. Optional filter (e.g. 'Incomplete Tasks') and sort field."""
+    return _proj.msp_get_tasks(filter_name, field, max_results)
+
+
+@mcp.tool()
+def msp_update_task(
+    task_id: int,
+    name: str | None = None,
+    duration: str | None = None,
+    start: str | None = None,
+    finish: str | None = None,
+    percent_complete: int | None = None,
+    predecessors: str | None = None,
+    notes: str | None = None,
+) -> dict:
+    """Update a task by UniqueID. Only provided fields are changed."""
+    return _proj.msp_update_task(
+        task_id, name, duration, start, finish, percent_complete, predecessors, notes
+    )
+
+
+@mcp.tool()
+def msp_delete_task(task_id: int) -> dict:
+    """Delete a task by UniqueID."""
+    return _proj.msp_delete_task(task_id)
+
+
+@mcp.tool()
+def msp_add_resource(
+    name: str,
+    resource_type: str = "work",
+    email: str | None = None,
+) -> dict:
+    """Add a resource. Type: 'work', 'material', or 'cost'."""
+    return _proj.msp_add_resource(name, resource_type, email)
+
+
+@mcp.tool()
+def msp_get_resources(max_results: int = 50) -> dict:
+    """List resources in the active project."""
+    return _proj.msp_get_resources(max_results)
+
+
+@mcp.tool()
+def msp_delete_resource(resource_id: int) -> dict:
+    """Delete a resource by UniqueID."""
+    return _proj.msp_delete_resource(resource_id)
+
+
+@mcp.tool()
+def msp_assign_resource(task_id: int, resource_id: int, units: int = 100) -> dict:
+    """Assign a resource to a task. Units: 100=full, 50=half time."""
+    return _proj.msp_assign_resource(task_id, resource_id, units)
+
+
+@mcp.tool()
+def msp_set_baseline(baseline_number: int = 0) -> dict:
+    """Save a baseline (0-10). 0=Baseline, 1=Baseline 1, etc."""
+    return _proj.msp_set_baseline(baseline_number)
+
+
+@mcp.tool()
+def msp_get_project_info() -> dict:
+    """Get info about the active project (name, tasks, resources, dates)."""
+    return _proj.msp_get_project_info()
+
+
+@mcp.tool()
+def msp_switch_view(view_name: str) -> dict:
+    """Switch to a named view (e.g. 'Gantt Chart', 'Resource Sheet')."""
+    return _proj.msp_switch_view(view_name)
+
+
+@mcp.tool()
+def msp_list_views() -> dict:
+    """List available views in the active project."""
+    return _proj.msp_list_views()
+
+
+# endregion
+
 def RunOfficeMCP() -> None:
     r"""OfficeMCP server entry point with command line arguments support.
     Usage examples:
