@@ -3,10 +3,10 @@
 Adapted from upstream [OfficeMCP/OfficeMCP](https://github.com/OfficeMCP/OfficeMCP)
 (commit `188140dc`, v1.0.5, fork `rezahanif/OfficeMCP`).
 
-> **LICENSE — DISTRIBUTION BLOCKED.** Upstream has **no LICENSE file**. Local
-> rework and internal fixture/testing use only. Public/customer redistribution
-> is BLOCKED until an upstream license/redistribution grant is obtained
-> (author: youngfe@live.com). Decision 2026-08-15 (D2).
+> **License status:** upstream is a public repo with no formal LICENSE file.
+> Distribution permitted by owner decision (2026-08-23) based on the author's
+> public "free to use" statement — see `LICENSE_PERMISSION.md` for the record,
+> risk acknowledgment, and fallback plan.
 
 ## Classification (AiConnect compatibility v2)
 
