@@ -68,6 +68,7 @@ class TheOfficer:
 
     def Speak(self,text: str="Hello!, I'm Office MCP.", volume: int = 80, rate: int = 2)->bool:
         """Speak the text. volume range is 0-100, rate range is -10 to 10."""
+        from officemcp.errors import TTSError
         try:
             if self.Speaker is None:
                 self.Speaker = self.GetComObject("SAPI.SPVOICE")
@@ -76,8 +77,7 @@ class TheOfficer:
             self.Speaker.Speak(text)
             return True
         except Exception as e:
-            print(e)
-            return False
+            raise TTSError(f"Text-to-speech failed: {e}") from e
     
     def Beep(self,frequency:int=500,duration:int=500):
         import winsound
@@ -116,53 +116,55 @@ class TheOfficer:
 
     def Visible(self, app_name: str, visible = None) -> bool:
         """Check if the specified application is visible."""
+        from officemcp.errors import AppNotRunningError, COMConnectionError
         try:
             app = self.Application(app_name)
             if app is None:
-                return False
-            else:
-                if not visible is None:
-                    app.Visible = visible
-                return app.Visible
+                raise AppNotRunningError(f"{app_name} is not running. Launch it first.")
+            if not visible is None:
+                app.Visible = visible
+            return app.Visible
+        except (AppNotRunningError, COMConnectionError):
+            raise
         except Exception as e:
-            print(e)
-            return False
+            raise COMConnectionError(f"Failed to check/set visibility for {app_name}: {e}") from e
 
     def Quit(self,app_name: str, force: bool = False)->bool:
         """Quit the microsoft excel application."""
+        from officemcp.errors import AppNotRunningError, COMConnectionError
         app_name_attr="_"+app_name.lower()
         if hasattr(self, app_name_attr):
             app = getattr(self, app_name_attr)
             try:
                 return self.QuitApplication(app, force)
+            except (AppNotRunningError, COMConnectionError):
+                raise
             except Exception as e:
-                print(e)
-        return False
+                raise COMConnectionError(f"Failed to quit {app_name}: {e}") from e
+        raise AppNotRunningError(f"{app_name} is not tracked. Launch it first.")
 
     def QuitApplication(self,app,force: bool = False)->bool:
+        from officemcp.errors import COMConnectionError
         if not force:
             try:
                 app.Quit()
                 return True
             except Exception as e:
-                print(e)
-                return False
+                raise COMConnectionError(f"Quit failed (app may have unsaved changes): {e}") from e
         import win32process
         import win32api
         import win32con
-        # Get the window's process id's
         hwnd = app.Hwnd
         t, p = win32process.GetWindowThreadProcessId(hwnd)
-        # Ask window nicely to close  
         try:
             handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, p)
             if handle:
                 win32api.TerminateProcess(handle, 0)
                 win32api.CloseHandle(handle)
                 return True
-        except:
-            pass
-        return False
+        except Exception as e:
+            raise COMConnectionError(f"Force terminate failed: {e}") from e
+        raise COMConnectionError("Could not obtain process handle for force termination")
 
     def ComApplication(self, com_diy_name: str, com_full_name,asNewInstance: bool = False) -> object:  # noqa: E741
         """Get the specified Microsoft Office application object."""
@@ -248,7 +250,6 @@ class TheOfficer:
                 pass
             return True
         except Exception as e:
-            print("e")
             return False
 
     def Demonstrate(self)->str:
