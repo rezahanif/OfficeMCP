@@ -16,7 +16,15 @@
   "token_env_var": "MCP_LICENSE_TOKEN",
   "stdio": true,
   "platform_requirements": {
-    "windows": ["Windows 10/11", "Microsoft Office installed (COM automation)"],
-    "com": ["Office apps must be installed for COM tools; MCP server starts fine without them (structured TOOL_ERROR off-Windows)"]
+    "windows": [
+      "Windows 10/11",
+      "Microsoft Office installed (COM automation)"
+    ],
+    "com": [
+      "Office apps must be installed for COM tools; MCP server starts fine without them (structured TOOL_ERROR off-Windows)"
+    ]
+  },
+  "config": {
+    "env": []
   }
 }
