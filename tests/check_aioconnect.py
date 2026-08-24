@@ -1,5 +1,5 @@
 """Adapter unit validation — runs WITHOUT mcp/pywin32/Office (python3.11).
-from pathlib import Path
+
 Validates the AiConnect adapter layer (license gate + envelope wrap) that the
 real server calls from run_server.py. All OfficeMCP tools are SYNC defs, so
 the sync wrapper path is exercised explicitly (FastMCP freezes is_async at
@@ -13,9 +13,10 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 
 FORK = Path(__file__).resolve().parents[1]
-sys.path.insert(0, FORK)
+sys.path.insert(0, str(FORK))
 
 # AiConnect SDK is external (not vendored — IP boundary). Dev default points
 # at the aiconnector monorepo; override with AICONNECT_SDK_PATH.
