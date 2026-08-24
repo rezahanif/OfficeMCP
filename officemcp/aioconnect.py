@@ -72,7 +72,17 @@ def _wrap_result(r):
             try:
                 return json.dumps(ok(json.loads(text)))
             except json.JSONDecodeError:
-                return json.dumps(fail("TOOL_ERROR", "non-JSON tool output"))
+                # _wrap_result is only ever called on a value FastMCP already
+                # accepted as a successful tool result (both call sites below,
+                # and interception.py's install_envelope_middleware, bypass it
+                # entirely on exceptions) - there is no "malformed" case to
+                # guard against here. A bare str-returning tool's text block is
+                # the raw string itself, not JSON - e.g. RootFolder() -> str
+                # produces the literal path text, never a json.dumps() of it.
+                # Treating that as an error was the bug: every plain-string
+                # tool failed with "non-JSON tool output" instead of returning
+                # its actual value.
+                return json.dumps(ok(text))
         return json.dumps(ok({"result": ""}))
     return json.dumps(ok(r))
 

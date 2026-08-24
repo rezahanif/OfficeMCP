@@ -82,7 +82,7 @@ os.environ["MCP_LICENSE_TOKEN"] = mint(["office-mcp"])
 env = json.loads(aioconnect._wrap_result('{"a":1}'))
 check("envelope: JSON → ok(data)", env.get("success") is True and env.get("data", {}).get("a") == 1)
 env = json.loads(aioconnect._wrap_result("raw boom"))
-check("envelope: non-JSON → fail TOOL_ERROR", env.get("success") is False and env.get("error", {}).get("code") == "TOOL_ERROR")
+check("envelope: non-JSON string → ok(text) (a real tool return, not garbage)", env.get("success") is True and env.get("data") == "raw boom")
 env = json.loads(aioconnect._wrap_result(""))
 check("envelope: empty → ok", env.get("success") is True)
 
