@@ -74,7 +74,7 @@ class FileOperationError(OfficeError):
     ]
 
 
-class PermissionError(OfficeError):
+class OfficePermissionError(OfficeError):
     """Access denied — file or COM object requires elevated permissions."""
     error_code = "permission_denied"
     hint = "Run as Administrator or check file permissions."

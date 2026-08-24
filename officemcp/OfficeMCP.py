@@ -3,10 +3,11 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastmcp import FastMCP
 from fastmcp.resources import TextResource
+from pydantic import Field
 from officemcp.Officer import TheOfficer
 from officemcp.errors import (
     COMConnectionError, AppNotInstalledError, AppNotRunningError,
@@ -47,16 +48,26 @@ def RunningApps() -> list:
     return Officer.RunningApps()
 
 @mcp.tool()
-def IsAppAvailable(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word") -> bool:
-    """Check if the specified Office application is installed.
-
-    app_name: Application name. Requires Windows + the app installed (COM).
-    """
+def IsAppAvailable(
+    app_name: Annotated[
+        Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"],
+        Field(description="Office application name to check. Requires Windows + the app installed (COM)."),
+    ] = "Word",
+) -> bool:
+    """Check if the specified Office application is installed."""
     return Officer.IsAppAvailable(app_name)
 
-
 @mcp.tool()
-def DownloadImage(url: str='https://www.bing.com/favicon.ico', save_path: str='favicon.ico') -> str:
+def DownloadImage(
+    url: Annotated[
+        str,
+        Field(description="URL of the image to download."),
+    ] = "https://www.bing.com/favicon.ico",
+    save_path: Annotated[
+        str,
+        Field(description="Local file path to save the downloaded image."),
+    ] = "favicon.ico",
+) -> str:
     """ Download an image from the given URL and save it to the specified path."""
     Officer.Print(f'Tool.DownloadImage....{url}  to  {save_path}')
     path = Officer.DownloadImage(url, save_path)
@@ -69,20 +80,31 @@ def RootFolder() -> str:
 
 
 @mcp.tool()
-def Visible(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word", visible: bool = True) -> bool:
-    """Show or hide an Office application window.
-
-    app_name: Application name. Requires Windows + the app running (COM).
-    visible: True to show the window, False to hide it.
-    """
+def Visible(
+    app_name: Annotated[
+        Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"],
+        Field(description="Office application to show or hide. Requires Windows + the app running (COM)."),
+    ] = "Word",
+    visible: Annotated[
+        bool,
+        Field(description="True shows the window, False hides it."),
+    ] = True,
+) -> bool:
+    """Show or hide an Office application window."""
     return Officer.Visible(app_name,visible)
 
 @mcp.tool()
-def Launch(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word", visible: bool = True) -> dict:
+def Launch(
+    app_name: Annotated[
+        Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"],
+        Field(description="Office application to launch. Requires Windows + the app installed (COM)."),
+    ] = "Word",
+    visible: Annotated[
+        bool,
+        Field(description="Whether to show the application window."),
+    ] = True,
+) -> dict:
     """Launch an Office application or attach to the running instance.
-
-    app_name: Application name. Requires Windows + the app installed (COM).
-    visible: Whether to show the application window.
 
     Returns:
         dict with success status and details
@@ -111,15 +133,17 @@ def Launch(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProjec
         ) from e
 
 @mcp.tool()
-def ScreenShot(save_path: str = None) -> dict:
+def ScreenShot(
+    save_path: Annotated[
+        str | None,
+        Field(description="Optional file path to save the screenshot. None for auto-generated path."),
+    ] = None,
+) -> dict:
     """Capture a screenshot of the entire screen.
-    
-    Args:
-        save_path: Optional file path to save the screenshot
-    
+
     Returns:
         dict with path to saved screenshot
-    
+
     Raises:
         ScreenshotError: if screen capture fails
     """
@@ -144,31 +168,49 @@ def ReadME() -> TextResource:
     return TextResource(Officer.FilePath("README.md"))
 
 @mcp.tool()
-def IsFileExists(sub_file_path: str) -> bool:
+def IsFileExists(
+    sub_file_path: Annotated[
+        str,
+        Field(description="Relative file path to check for existence under RootFolder."),
+    ],
+) -> bool:
     return Officer.IsFileExists(sub_file_path)
 
 @mcp.tool()
-def Quit(app_name: Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"] = "Word", force: bool = False) -> bool:
-    """Quit an Office application.
-
-    app_name: Application name. Requires Windows + the app running (COM).
-    force: True to close without saving prompts.
-    """
+def Quit(
+    app_name: Annotated[
+        Literal["Word", "Excel", "PowerPoint", "Outlook", "MSProject", "Access"],
+        Field(description="Office application to quit. Requires Windows + the app running (COM)."),
+    ] = "Word",
+    force: Annotated[
+        bool,
+        Field(description="True to close without saving prompts."),
+    ] = False,
+) -> bool:
+    """Quit an Office application."""
     _log('Tool.Quit:')
     return Officer.Quit(app_name,force)
 
 @mcp.tool()
-def Speak(text: str = "I'm office mcp server , how are you", volume: int = 80, rate: int = 0)->dict:
+def Speak(
+    text: Annotated[
+        str,
+        Field(description="Text to speak via Windows SAPI."),
+    ] = "I'm office mcp server , how are you",
+    volume: Annotated[
+        int,
+        Field(description="Volume level (0-100)."),
+    ] = 80,
+    rate: Annotated[
+        int,
+        Field(description="Speech rate (-10 to 10)."),
+    ] = 0,
+) -> dict:
     """ Speak the text using Windows SAPI.
-    
-    Args:
-        text: Text to speak
-        volume: Volume level (0-100)
-        rate: Speech rate (-10 to 10)
-    
+
     Returns:
         dict with success status
-    
+
     Raises:
         TTSError: if speech synthesis fails
     """
@@ -188,12 +230,14 @@ def Speak(text: str = "I'm office mcp server , how are you", volume: int = 80, r
 
 
 @mcp.tool()
-def get_error_hints(error_code: str = None) -> dict:
+def get_error_hints(
+    error_code: Annotated[
+        str | None,
+        Field(description='Optional error code to get hints for (e.g. "com_connection"). None returns all hints.'),
+    ] = None,
+) -> dict:
     """Get recovery hints for a specific error code or all error types.
-    
-    Args:
-        error_code: Optional error code to get hints for (e.g. "com_connection")
-    
+
     Returns:
         dict with error hints and recovery guidance
     """
@@ -205,17 +249,22 @@ def get_error_hints(error_code: str = None) -> dict:
     return {"error_types": list(ERROR_HINTS.keys()), "hints": ERROR_HINTS}
 
 @mcp.tool()
-def Beep(frequency: int = 500, duration: int = 500) -> bool:
-    """Beep the PC speaker.
-
-    frequency: Tone frequency in Hz (37-32767). Default 500 Hz.
-    duration: Duration in milliseconds (0-65535). Default 500 ms.
-    """
+def Beep(
+    frequency: Annotated[
+        int,
+        Field(description="Tone frequency in Hz (37-32767)."),
+    ] = 500,
+    duration: Annotated[
+        int,
+        Field(description="Duration in milliseconds (0-65535)."),
+    ] = 500,
+) -> bool:
+    """Beep the PC speaker."""
     _log('Tool.Beep:')
     return Officer.Beep(frequency, duration)
     
 @mcp.tool()
-def Demonstrate()->dict:
+def Demonstrate() -> dict:
     """ Demonstrate for you to see some functions in this OfficeMCP server."""
     _log('Tool.Demonstrate:')
     output = ""
@@ -244,16 +293,25 @@ from officemcp import documents as _docs
 # --- Word (.docx) ---
 
 @mcp.tool()
-def doc_create(path: str) -> dict:
+def doc_create(
+    path: Annotated[
+        str,
+        Field(description="File path relative to the connector root folder (or absolute) for the new .docx."),
+    ],
+) -> dict:
     """Create a new empty Word document (.docx).
 
-    path: File path relative to the connector root folder (or absolute).
     Works on any OS — no Office installation required.
     """
     return _docs.doc_create(path)
 
 @mcp.tool()
-def doc_read(path: str) -> dict:
+def doc_read(
+    path: Annotated[
+        str,
+        Field(description="Path to the .docx file to read."),
+    ],
+) -> dict:
     """Read all paragraph texts and tables from a Word document (.docx).
 
     Returns {paragraphs: [str], tables: [[[str]]], counts}. Cross-platform.
@@ -261,32 +319,74 @@ def doc_read(path: str) -> dict:
     return _docs.doc_read(path)
 
 @mcp.tool()
-def doc_add_paragraph(path: str, text: str, style: str | None = None) -> dict:
-    """Append a paragraph to a Word document (.docx).
-
-    style: Optional style name like "Normal", "Quote", "List Bullet".
-    """
+def doc_add_paragraph(
+    path: Annotated[
+        str,
+        Field(description="Path to the .docx file to modify."),
+    ],
+    text: Annotated[
+        str,
+        Field(description="Paragraph text to append."),
+    ],
+    style: Annotated[
+        str | None,
+        Field(description='Optional style name like "Normal", "Quote", "List Bullet".'),
+    ] = None,
+) -> dict:
+    """Append a paragraph to a Word document (.docx)."""
     return _docs.doc_add_paragraph(path, text, style)
 
 @mcp.tool()
-def doc_add_heading(path: str, text: str, level: int = 1) -> dict:
-    """Add a heading to a Word document (.docx).
-
-    level: Heading level 0-4 (0 = Title, 1 = Heading 1, ...).
-    """
+def doc_add_heading(
+    path: Annotated[
+        str,
+        Field(description="Path to the .docx file to modify."),
+    ],
+    text: Annotated[
+        str,
+        Field(description="Heading text."),
+    ],
+    level: Annotated[
+        int,
+        Field(description="Heading level 0-4 (0 = Title, 1 = Heading 1, ...)."),
+    ] = 1,
+) -> dict:
+    """Add a heading to a Word document (.docx)."""
     return _docs.doc_add_heading(path, text, level)
 
 @mcp.tool()
-def doc_add_table(path: str, rows: list[list[str]], headers: list[str] | None = None) -> dict:
-    """Append a table to a Word document (.docx).
-
-    rows: 2D array of cell strings.
-    headers: Optional first-row header labels (prepended to rows).
-    """
+def doc_add_table(
+    path: Annotated[
+        str,
+        Field(description="Path to the .docx file to modify."),
+    ],
+    rows: Annotated[
+        list[list[str]],
+        Field(description="2D array of cell strings for table rows."),
+    ],
+    headers: Annotated[
+        list[str] | None,
+        Field(description="Optional first-row header labels (prepended to rows)."),
+    ] = None,
+) -> dict:
+    """Append a table to a Word document (.docx)."""
     return _docs.doc_add_table(path, rows, headers)
 
 @mcp.tool()
-def doc_replace_text(path: str, find: str, replace: str) -> dict:
+def doc_replace_text(
+    path: Annotated[
+        str,
+        Field(description="Path to the .docx file to modify."),
+    ],
+    find: Annotated[
+        str,
+        Field(description="Text string to search for across paragraphs and table cells."),
+    ],
+    replace: Annotated[
+        str,
+        Field(description="Replacement text."),
+    ],
+) -> dict:
     """Replace all occurrences of find with replace across paragraphs and table cells.
 
     Returns the number of replacements made. Handles both simple runs and
@@ -295,7 +395,12 @@ def doc_replace_text(path: str, find: str, replace: str) -> dict:
     return _docs.doc_replace_text(path, find, replace)
 
 @mcp.tool()
-def doc_get_properties(path: str) -> dict:
+def doc_get_properties(
+    path: Annotated[
+        str,
+        Field(description="Path to the .docx file to inspect."),
+    ],
+) -> dict:
     """Read core properties of a Word document (.docx): title, author, dates, counts."""
     return _docs.doc_get_properties(path)
 
@@ -303,46 +408,104 @@ def doc_get_properties(path: str) -> dict:
 # --- Excel (.xlsx) ---
 
 @mcp.tool()
-def xlsx_create(path: str) -> dict:
+def xlsx_create(
+    path: Annotated[
+        str,
+        Field(description="File path for the new .xlsx workbook."),
+    ],
+) -> dict:
     """Create a new Excel workbook (.xlsx) with one default sheet. Cross-platform."""
     return _docs.xlsx_create(path)
 
 @mcp.tool()
-def xlsx_read_cells(path: str, sheet: str | None = None, cell_range: str | None = None) -> dict:
-    """Read cell values from an Excel workbook (.xlsx).
-
-    sheet: Sheet name (default: first sheet).
-    cell_range: Optional A1-style range ("A1:C10") or single cell ("B2").
-                Omit to read all non-empty rows.
-    """
+def xlsx_read_cells(
+    path: Annotated[
+        str,
+        Field(description="Path to the .xlsx file to read."),
+    ],
+    sheet: Annotated[
+        str | None,
+        Field(description="Sheet name (default: first sheet)."),
+    ] = None,
+    cell_range: Annotated[
+        str | None,
+        Field(description='Optional A1-style range ("A1:C10") or single cell ("B2"). Omit to read all non-empty rows.'),
+    ] = None,
+) -> dict:
+    """Read cell values from an Excel workbook (.xlsx)."""
     return _docs.xlsx_read_cells(path, sheet, cell_range)
 
 @mcp.tool()
-def xlsx_write_cells(path: str, sheet: str, start_cell: str, data: list[list[_Any]]) -> dict:
-    """Write a 2D array of values starting at start_cell on the named sheet.
-
-    start_cell: A1-style anchor ("A1"). Creates the sheet if missing.
-    data: 2D array; numbers stay numbers, strings stay strings.
-    """
+def xlsx_write_cells(
+    path: Annotated[
+        str,
+        Field(description="Path to the .xlsx file to modify."),
+    ],
+    sheet: Annotated[
+        str,
+        Field(description="Sheet name to write to. Creates the sheet if missing."),
+    ],
+    start_cell: Annotated[
+        str,
+        Field(description='A1-style anchor (e.g. "A1") indicating where to start writing.'),
+    ],
+    data: Annotated[
+        list[list[_Any]],
+        Field(description="2D array of values; numbers stay numbers, strings stay strings."),
+    ],
+) -> dict:
+    """Write a 2D array of values starting at start_cell on the named sheet."""
     return _docs.xlsx_write_cells(path, sheet, start_cell, data)
 
 @mcp.tool()
-def xlsx_list_sheets(path: str) -> dict:
+def xlsx_list_sheets(
+    path: Annotated[
+        str,
+        Field(description="Path to the .xlsx file to inspect."),
+    ],
+) -> dict:
     """List all sheet names in an Excel workbook (.xlsx)."""
     return _docs.xlsx_list_sheets(path)
 
 @mcp.tool()
-def xlsx_add_sheet(path: str, name: str) -> dict:
+def xlsx_add_sheet(
+    path: Annotated[
+        str,
+        Field(description="Path to the .xlsx file to modify."),
+    ],
+    name: Annotated[
+        str,
+        Field(description="Name for the new sheet. Fails if the name already exists."),
+    ],
+) -> dict:
     """Add a new sheet to an Excel workbook (.xlsx). Fails if the name exists."""
     return _docs.xlsx_add_sheet(path, name)
 
 @mcp.tool()
-def xlsx_append_rows(path: str, sheet: str, rows: list[list[_Any]]) -> dict:
+def xlsx_append_rows(
+    path: Annotated[
+        str,
+        Field(description="Path to the .xlsx file to modify."),
+    ],
+    sheet: Annotated[
+        str,
+        Field(description="Sheet name to append to. Creates the sheet if missing."),
+    ],
+    rows: Annotated[
+        list[list[_Any]],
+        Field(description="2D array of rows to append at the end of the sheet."),
+    ],
+) -> dict:
     """Append rows at the end of a sheet (creates the sheet if missing)."""
     return _docs.xlsx_append_rows(path, sheet, rows)
 
 @mcp.tool()
-def xlsx_get_properties(path: str) -> dict:
+def xlsx_get_properties(
+    path: Annotated[
+        str,
+        Field(description="Path to the .xlsx file to inspect."),
+    ],
+) -> dict:
     """Read workbook metadata: title, creator, created date, sheet list."""
     return _docs.xlsx_get_properties(path)
 
@@ -350,12 +513,22 @@ def xlsx_get_properties(path: str) -> dict:
 # --- PowerPoint (.pptx) ---
 
 @mcp.tool()
-def pptx_create(path: str) -> dict:
+def pptx_create(
+    path: Annotated[
+        str,
+        Field(description="File path for the new .pptx presentation."),
+    ],
+) -> dict:
     """Create a new presentation (.pptx) with one blank title slide. Cross-platform."""
     return _docs.pptx_create(path)
 
 @mcp.tool()
-def pptx_read(path: str) -> dict:
+def pptx_read(
+    path: Annotated[
+        str,
+        Field(description="Path to the .pptx file to read."),
+    ],
+) -> dict:
     """Extract all text from every slide of a presentation (.pptx).
 
     Returns [{index, texts: [str]}] per slide, including table cell text.
@@ -363,16 +536,30 @@ def pptx_read(path: str) -> dict:
     return _docs.pptx_read(path)
 
 @mcp.tool()
-def pptx_add_slide(path: str, title: str, content: str | None = None) -> dict:
-    """Add a slide with a title and optional body content to a presentation (.pptx).
-
-    content: Body paragraph text. Placed in the layout's body placeholder,
-    or a new textbox if the layout has none.
-    """
+def pptx_add_slide(
+    path: Annotated[
+        str,
+        Field(description="Path to the .pptx file to modify."),
+    ],
+    title: Annotated[
+        str,
+        Field(description="Slide title text."),
+    ],
+    content: Annotated[
+        str | None,
+        Field(description="Optional body paragraph text. Placed in layout body placeholder or a new textbox."),
+    ] = None,
+) -> dict:
+    """Add a slide with a title and optional body content to a presentation (.pptx)."""
     return _docs.pptx_add_slide(path, title, content)
 
 @mcp.tool()
-def pptx_get_info(path: str) -> dict:
+def pptx_get_info(
+    path: Annotated[
+        str,
+        Field(description="Path to the .pptx file to inspect."),
+    ],
+) -> dict:
     """Read presentation metadata: title, author, slide count, dimensions (EMU)."""
     return _docs.pptx_get_info(path)
 
@@ -398,11 +585,17 @@ def _load_templates() -> dict:
 
 
 @mcp.tool()
-def search_office_api(query: str, category: str | None = None) -> list[dict]:
+def search_office_api(
+    query: Annotated[
+        str,
+        Field(description='What you need (e.g. "open workbook", "add slide", "replace text").'),
+    ],
+    category: Annotated[
+        str | None,
+        Field(description="Optional category filter from list_office_api_categories results."),
+    ] = None,
+) -> list[dict]:
     """Search the Office API documentation for objects/methods matching a query.
-
-    query: What you need (e.g. "open workbook", "add slide", "replace text").
-    category: Optional — restrict via list_office_api_categories results.
 
     Use BEFORE writing custom automation: returns object names, syntax,
     descriptions, and examples for both the COM model and cross-platform
@@ -422,10 +615,22 @@ def list_office_api_categories() -> list[dict]:
 
 @mcp.tool()
 def office_function_registry_query(
-    function_path: str | None = None,
-    category: str | None = None,
-    verified_only: bool = False,
-    query: str | None = None,
+    function_path: Annotated[
+        str | None,
+        Field(description="Dot-path to a specific registered function (e.g. 'Excel.Workbook.Open')."),
+    ] = None,
+    category: Annotated[
+        str | None,
+        Field(description="Filter by API category."),
+    ] = None,
+    verified_only: Annotated[
+        bool,
+        Field(description="If True, return only verified patterns."),
+    ] = False,
+    query: Annotated[
+        str | None,
+        Field(description="Free-text search across registered functions."),
+    ] = None,
 ) -> dict:
     """Query the registry of verified Office API patterns.
 
@@ -444,12 +649,30 @@ def office_function_registry_query(
 
 @mcp.tool()
 def register_verified_office(
-    function_path: str,
-    category: str,
-    description: str = "",
-    signature: str = "",
-    parameter_notes: str = "",
-    notes: str = "",
+    function_path: Annotated[
+        str,
+        Field(description="Dot-path identifier for the function (e.g. 'Excel.Worksheet.Cells')."),
+    ],
+    category: Annotated[
+        str,
+        Field(description="API category (e.g. 'Excel', 'Word', 'PowerPoint')."),
+    ],
+    description: Annotated[
+        str,
+        Field(description="What the function does."),
+    ] = "",
+    signature: Annotated[
+        str,
+        Field(description="Exact call signature used successfully."),
+    ] = "",
+    parameter_notes: Annotated[
+        str,
+        Field(description="Pitfalls, gotchas, or notes about parameter values."),
+    ] = "",
+    notes: Annotated[
+        str,
+        Field(description="Additional notes about this pattern."),
+    ] = "",
 ) -> dict:
     """Register a verified Office API pattern so future agents reuse it.
 
@@ -479,7 +702,12 @@ def list_templates() -> list[dict]:
 
 
 @mcp.tool()
-def load_template(template_id: str) -> dict:
+def load_template(
+    template_id: Annotated[
+        str,
+        Field(description="Template identifier from list_templates (e.g. 'report-skeleton')."),
+    ],
+) -> dict:
     """Load one template's full tool-call sequence by id (from list_templates).
 
     The sequences are verified — adapt file names to yours.
@@ -497,61 +725,129 @@ import officemcp.project as _proj
 
 
 @mcp.tool()
-def msp_create(path: str) -> dict:
+def msp_create(
+    path: Annotated[
+        str,
+        Field(description="File path for the new .mpp project file."),
+    ],
+) -> dict:
     """Create a new blank Microsoft Project file (.mpp)."""
     return _proj.msp_create(path)
 
 
 @mcp.tool()
-def msp_open(path: str) -> dict:
+def msp_open(
+    path: Annotated[
+        str,
+        Field(description="Path to an existing .mpp project file to open."),
+    ],
+) -> dict:
     """Open an existing .mpp project file."""
     return _proj.msp_open(path)
 
 
 @mcp.tool()
-def msp_save(path: str | None = None) -> dict:
+def msp_save(
+    path: Annotated[
+        str | None,
+        Field(description="Optional path for SaveAs. None saves to current location."),
+    ] = None,
+) -> dict:
     """Save the active project. Pass path to SaveAs."""
     return _proj.msp_save(path)
 
 
 @mcp.tool()
-def msp_close(save: bool = True) -> dict:
+def msp_close(
+    save: Annotated[
+        bool,
+        Field(description="True to save before closing."),
+    ] = True,
+) -> dict:
     """Close the active project."""
     return _proj.msp_close(save)
 
 
 @mcp.tool()
 def msp_add_task(
-    name: str,
-    duration: str | None = None,
-    start: str | None = None,
-    predecessors: str | None = None,
-    notes: str | None = None,
+    name: Annotated[
+        str,
+        Field(description="Task name."),
+    ],
+    duration: Annotated[
+        str | None,
+        Field(description='Optional duration string (e.g. "3d", "1w", "4h").'),
+    ] = None,
+    start: Annotated[
+        str | None,
+        Field(description="Optional start date string."),
+    ] = None,
+    predecessors: Annotated[
+        str | None,
+        Field(description='Optional predecessor references (e.g. "1,3FS+2d").'),
+    ] = None,
+    notes: Annotated[
+        str | None,
+        Field(description="Optional task notes."),
+    ] = None,
 ) -> dict:
-    """Add a task. Duration: '3d', '1w', '4h'. Predecessors: '1,3FS+2d'."""
+    """Add a task."""
     return _proj.msp_add_task(name, duration, start, predecessors, notes)
 
 
 @mcp.tool()
 def msp_get_tasks(
-    filter_name: str | None = None,
-    field: str | None = None,
-    max_results: int = 50,
+    filter_name: Annotated[
+        str | None,
+        Field(description='Optional filter (e.g. "Incomplete Tasks").'),
+    ] = None,
+    field: Annotated[
+        str | None,
+        Field(description="Optional field name to sort by."),
+    ] = None,
+    max_results: Annotated[
+        int,
+        Field(description="Maximum number of tasks to return."),
+    ] = 50,
 ) -> dict:
-    """List tasks. Optional filter (e.g. 'Incomplete Tasks') and sort field."""
+    """List tasks. Optional filter and sort field."""
     return _proj.msp_get_tasks(filter_name, field, max_results)
 
 
 @mcp.tool()
 def msp_update_task(
-    task_id: int,
-    name: str | None = None,
-    duration: str | None = None,
-    start: str | None = None,
-    finish: str | None = None,
-    percent_complete: int | None = None,
-    predecessors: str | None = None,
-    notes: str | None = None,
+    task_id: Annotated[
+        int,
+        Field(description="Unique ID of the task to update."),
+    ],
+    name: Annotated[
+        str | None,
+        Field(description="New task name."),
+    ] = None,
+    duration: Annotated[
+        str | None,
+        Field(description='New duration string (e.g. "5d").'),
+    ] = None,
+    start: Annotated[
+        str | None,
+        Field(description="New start date string."),
+    ] = None,
+    finish: Annotated[
+        str | None,
+        Field(description="New finish date string."),
+    ] = None,
+    percent_complete: Annotated[
+        int | None,
+        Field(description="Completion percentage (0-100)."),
+    ] = None,
+    predecessors: Annotated[
+        str | None,
+        Field(description='New predecessor references (e.g. "1FS+2d").'),
+    ] = None,
+    notes: Annotated[
+        str | None,
+        Field(description="New task notes."),
+    ] = None,
 ) -> dict:
     """Update a task by UniqueID. Only provided fields are changed."""
     return _proj.msp_update_task(
@@ -560,42 +856,84 @@ def msp_update_task(
 
 
 @mcp.tool()
-def msp_delete_task(task_id: int) -> dict:
+def msp_delete_task(
+    task_id: Annotated[
+        int,
+        Field(description="Unique ID of the task to delete."),
+    ],
+) -> dict:
     """Delete a task by UniqueID."""
     return _proj.msp_delete_task(task_id)
 
 
 @mcp.tool()
 def msp_add_resource(
-    name: str,
-    resource_type: str = "work",
-    email: str | None = None,
+    name: Annotated[
+        str,
+        Field(description="Resource name."),
+    ],
+    resource_type: Annotated[
+        str,
+        Field(description="Resource type: 'work', 'material', or 'cost'."),
+    ] = "work",
+    email: Annotated[
+        str | None,
+        Field(description="Optional email for work resources."),
+    ] = None,
 ) -> dict:
-    """Add a resource. Type: 'work', 'material', or 'cost'."""
+    """Add a resource."""
     return _proj.msp_add_resource(name, resource_type, email)
 
 
 @mcp.tool()
-def msp_get_resources(max_results: int = 50) -> dict:
+def msp_get_resources(
+    max_results: Annotated[
+        int,
+        Field(description="Maximum number of resources to return."),
+    ] = 50,
+) -> dict:
     """List resources in the active project."""
     return _proj.msp_get_resources(max_results)
 
 
 @mcp.tool()
-def msp_delete_resource(resource_id: int) -> dict:
+def msp_delete_resource(
+    resource_id: Annotated[
+        int,
+        Field(description="Unique ID of the resource to delete."),
+    ],
+) -> dict:
     """Delete a resource by UniqueID."""
     return _proj.msp_delete_resource(resource_id)
 
 
 @mcp.tool()
-def msp_assign_resource(task_id: int, resource_id: int, units: int = 100) -> dict:
-    """Assign a resource to a task. Units: 100=full, 50=half time."""
+def msp_assign_resource(
+    task_id: Annotated[
+        int,
+        Field(description="Unique ID of the task to assign to."),
+    ],
+    resource_id: Annotated[
+        int,
+        Field(description="Unique ID of the resource to assign."),
+    ],
+    units: Annotated[
+        int,
+        Field(description="Allocation percentage: 100=full time, 50=half time."),
+    ] = 100,
+) -> dict:
+    """Assign a resource to a task."""
     return _proj.msp_assign_resource(task_id, resource_id, units)
 
 
 @mcp.tool()
-def msp_set_baseline(baseline_number: int = 0) -> dict:
-    """Save a baseline (0-10). 0=Baseline, 1=Baseline 1, etc."""
+def msp_set_baseline(
+    baseline_number: Annotated[
+        int,
+        Field(description="Baseline slot (0-10). 0=Baseline, 1=Baseline 1, etc."),
+    ] = 0,
+) -> dict:
+    """Save a baseline (0-10)."""
     return _proj.msp_set_baseline(baseline_number)
 
 
@@ -606,8 +944,13 @@ def msp_get_project_info() -> dict:
 
 
 @mcp.tool()
-def msp_switch_view(view_name: str) -> dict:
-    """Switch to a named view (e.g. 'Gantt Chart', 'Resource Sheet')."""
+def msp_switch_view(
+    view_name: Annotated[
+        str,
+        Field(description='View name (e.g. "Gantt Chart", "Resource Sheet").'),
+    ],
+) -> dict:
+    """Switch to a named view."""
     return _proj.msp_switch_view(view_name)
 
 
@@ -615,7 +958,6 @@ def msp_switch_view(view_name: str) -> dict:
 def msp_list_views() -> dict:
     """List available views in the active project."""
     return _proj.msp_list_views()
-
 
 # endregion
 

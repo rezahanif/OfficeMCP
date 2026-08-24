@@ -9,9 +9,10 @@ import json
 
 from fake_license import SECRET, mcp_initialize, mcp_tools_list, mint, spawn_server, stop
 
-# 13 curated tools — upstream RunPython tool REMOVED (see README security
+# All 54 tools — upstream RunPython tool REMOVED (see README security
 # posture). ReadME + Instructions are resources, not tools.
 EXPECTED_TOOLS = {
+    # COM lifecycle (13)
     "AvailableApps",
     "RunningApps",
     "IsAppAvailable",
@@ -25,6 +26,53 @@ EXPECTED_TOOLS = {
     "Speak",
     "Beep",
     "Demonstrate",
+    # Guidance (1)
+    "get_error_hints",
+    # Word (.docx) CRUD (7)
+    "doc_create",
+    "doc_read",
+    "doc_add_paragraph",
+    "doc_add_heading",
+    "doc_add_table",
+    "doc_replace_text",
+    "doc_get_properties",
+    # Excel (.xlsx) CRUD (7)
+    "xlsx_create",
+    "xlsx_read_cells",
+    "xlsx_write_cells",
+    "xlsx_list_sheets",
+    "xlsx_add_sheet",
+    "xlsx_append_rows",
+    "xlsx_get_properties",
+    # PowerPoint (.pptx) CRUD (4)
+    "pptx_create",
+    "pptx_read",
+    "pptx_add_slide",
+    "pptx_get_info",
+    # Layer B API guidance (6)
+    "search_office_api",
+    "list_office_api_categories",
+    "office_function_registry_query",
+    "register_verified_office",
+    "list_templates",
+    "load_template",
+    # Microsoft Project (16)
+    "msp_create",
+    "msp_open",
+    "msp_save",
+    "msp_close",
+    "msp_add_task",
+    "msp_get_tasks",
+    "msp_update_task",
+    "msp_delete_task",
+    "msp_add_resource",
+    "msp_get_resources",
+    "msp_delete_resource",
+    "msp_assign_resource",
+    "msp_set_baseline",
+    "msp_get_project_info",
+    "msp_switch_view",
+    "msp_list_views",
 }
 
 
