@@ -31,7 +31,14 @@ class TheOfficer:
         self._kwpp = None
         self._kwps = None
 
-        self._default_folder ="D:\\@OfficeMCP"
+        # NOT a Windows literal. RunOfficeMCP() overrides this with
+        # OFFICE_MCP_ROOT / ~/@OfficeMCP, but RootFolder below does makedirs() on
+        # whatever is set, so any code path touching it before that override ran
+        # created a directory literally named `D:\@OfficeMCP` — on Linux too.
+        # One is sitting in the repo with test artifacts in it.
+        self._default_folder = os.environ.get("OFFICE_MCP_ROOT") or os.path.join(
+            os.path.expanduser("~"), "@OfficeMCP"
+        )
 
         self.Version = "1.0.4"
 

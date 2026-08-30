@@ -39,12 +39,12 @@ Officer = mcp.Officer
 
 @mcp.tool()
 def AvailableApps() -> list:
-    """Get Microsoft Office applications availability. """
+    """Office applications INSTALLED on this machine, whether running or not."""
     return Officer.AvailableApps()
 
 @mcp.tool()
 def RunningApps() -> list:
-    """Get Microsoft Office applications availability. """
+    """Office applications currently OPEN, a subset of AvailableApps."""
     return Officer.RunningApps()
 
 @mcp.tool()
@@ -174,6 +174,7 @@ def IsFileExists(
         Field(description="Relative file path to check for existence under RootFolder."),
     ],
 ) -> bool:
+    """Check whether a file exists under the server's root folder."""
     return Officer.IsFileExists(sub_file_path)
 
 @mcp.tool()
@@ -567,12 +568,12 @@ def pptx_get_info(
 
 # region Layer B — API guidance tools (AiConnect Phase 1) ---------------
 #
-# Fallback path: when no dedicated tool covers the intent, the agent
-# searches the Office API docs, composes code, and registers the verified
-# pattern so future agents find it directly.
+# Fallback path: when no dedicated tool covers the intent, the agent searches the
+# Office API docs and adapts a template. There is deliberately no exec hatch —
+# RunPython was removed (D1, 2026-08-15) — so discovery ends at documentation,
+# not at arbitrary execution.
 
 from officemcp.doc_search import doc_index as _doc_index  # noqa: E402
-from officemcp.function_registry import registry as _registry  # noqa: E402
 
 _TEMPLATES_PATH = Path(__file__).resolve().parent.parent / "templates" / "templates.json"
 
@@ -611,84 +612,6 @@ def list_office_api_categories() -> list[dict]:
     Returns [{category, sections}] — e.g. Excel Worksheet Object (5).
     """
     return _doc_index.list_categories()
-
-
-@mcp.tool()
-def office_function_registry_query(
-    function_path: Annotated[
-        str | None,
-        Field(description="Dot-path to a specific registered function (e.g. 'Excel.Workbook.Open')."),
-    ] = None,
-    category: Annotated[
-        str | None,
-        Field(description="Filter by API category."),
-    ] = None,
-    verified_only: Annotated[
-        bool,
-        Field(description="If True, return only verified patterns."),
-    ] = False,
-    query: Annotated[
-        str | None,
-        Field(description="Free-text search across registered functions."),
-    ] = None,
-) -> dict:
-    """Query the registry of verified Office API patterns.
-
-    Modes: no args = summary; function_path = one detail; category/query/
-    verified_only = filtered list. Verified entries record working call
-    patterns and pitfalls discovered by earlier agents.
-    """
-    if function_path:
-        fn = _registry.get_function(function_path)
-        if fn is None:
-            return {"error": f"Unknown function: {function_path}", "registered": False}
-        return {"registered": True, **fn}
-    matches = _registry.list_functions(category=category, verified_only=verified_only, query=query)
-    return {"summary": _registry.get_summary(), "functions": matches}
-
-
-@mcp.tool()
-def register_verified_office(
-    function_path: Annotated[
-        str,
-        Field(description="Dot-path identifier for the function (e.g. 'Excel.Worksheet.Cells')."),
-    ],
-    category: Annotated[
-        str,
-        Field(description="API category (e.g. 'Excel', 'Word', 'PowerPoint')."),
-    ],
-    description: Annotated[
-        str,
-        Field(description="What the function does."),
-    ] = "",
-    signature: Annotated[
-        str,
-        Field(description="Exact call signature used successfully."),
-    ] = "",
-    parameter_notes: Annotated[
-        str,
-        Field(description="Pitfalls, gotchas, or notes about parameter values."),
-    ] = "",
-    notes: Annotated[
-        str,
-        Field(description="Additional notes about this pattern."),
-    ] = "",
-) -> dict:
-    """Register a verified Office API pattern so future agents reuse it.
-
-    Call AFTER successfully running an operation. Records the exact call
-    signature and any pitfalls. Only register what actually worked.
-    """
-    result = _registry.register_function(
-        function_path=function_path,
-        category=category,
-        description=description,
-        signature=signature,
-        parameter_notes=parameter_notes,
-        notes=notes,
-    )
-    _registry.mark_verified(function_path)
-    return result
 
 
 @mcp.tool()
@@ -791,7 +714,9 @@ def msp_add_task(
         Field(description="Optional task notes."),
     ] = None,
 ) -> dict:
-    """Add a task."""
+    """Add an activity to the project schedule, with duration and predecessors.
+
+    The unit of work in a plan: an activity, task or job with a duration."""
     return _proj.msp_add_task(name, duration, start, predecessors, notes)
 
 
@@ -810,7 +735,9 @@ def msp_get_tasks(
         Field(description="Maximum number of tasks to return."),
     ] = 50,
 ) -> dict:
-    """List tasks. Optional filter and sort field."""
+    """List the activities in the project schedule — the work in the plan.
+
+    Optional filter and sort field. Returns tasks with durations and dates."""
     return _proj.msp_get_tasks(filter_name, field, max_results)
 
 

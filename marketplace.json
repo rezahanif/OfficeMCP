@@ -1,0 +1,24 @@
+{
+  "id": "office-mcp",
+  "name": "Microsoft Office Documents & Automation",
+  "category": "Productivity & Documents",
+  "tags": ["office", "word", "excel", "powerpoint", "msproject", "docx", "xlsx", "pptx", "mcp"],
+  "author": {
+    "name": "AiConnect Official",
+    "url": "https://aiconnect.fun",
+    "verified": true
+  },
+  "description": "Read and write Word, Excel and PowerPoint files and drive Microsoft Project schedules directly from AI agents. Document operations are pure file-format library calls and work without Office installed; the COM lifecycle tools require Office on Windows.",
+  "license": "MIT",
+  "homepage": "https://github.com/rezahanif/OfficeMCP",
+  "assets": {
+    "icon": "assets/logo.svg"
+  },
+  "capabilities": [
+    "Create, read and edit Word documents (.docx)",
+    "Read and write Excel workbooks and sheets (.xlsx)",
+    "Build and read PowerPoint decks (.pptx)",
+    "Manage Microsoft Project tasks, resources and baselines",
+    "Launch, show and quit Office applications over COM"
+  ]
+}

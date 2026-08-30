@@ -10,7 +10,14 @@ requires-python = ">=3.12"
 dependencies = [
     "fastmcp>=2.3.3,<3.0.0",
     "pydantic>=2.0",
-    "pywin32>=310",
+    # officemcp/documents.py imports these at MODULE level, and OfficeMCP.py
+    # imports documents unconditionally, so without them the connector does not
+    # merely lose the 18 OOXML tools — it fails to import at all.
+    "python-docx>=1.1.0",
+    "openpyxl>=3.1.0",
+    "python-pptx>=0.6.23",
+    # Windows-only; the COM tools need it, the OOXML ones do not.
+    "pywin32>=310; sys_platform == 'win32'",
 ]
 
 [project.scripts]

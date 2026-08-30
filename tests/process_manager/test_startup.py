@@ -9,7 +9,7 @@ import json
 
 from fake_license import SECRET, mcp_initialize, mcp_tools_list, mint, spawn_server, stop
 
-# All 54 tools — upstream RunPython tool REMOVED (see README security
+# All 52 tools — upstream RunPython tool REMOVED (see README security
 # posture). ReadME + Instructions are resources, not tools.
 EXPECTED_TOOLS = {
     # COM lifecycle (13)
@@ -49,11 +49,13 @@ EXPECTED_TOOLS = {
     "pptx_read",
     "pptx_add_slide",
     "pptx_get_info",
-    # Layer B API guidance (6)
+    # Layer B API guidance (4)
+    # office_function_registry_query and register_verified_office were REMOVED:
+    # they read scripts/registry.json, which never existed in this repo, so both
+    # answered every call from an empty registry while costing ~557 tokens of
+    # tool surface in every session. See aiconnector docs/audit/OFFICE-API-BENCHMARK.md.
     "search_office_api",
     "list_office_api_categories",
-    "office_function_registry_query",
-    "register_verified_office",
     "list_templates",
     "load_template",
     # Microsoft Project (16)

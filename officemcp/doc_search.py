@@ -1,13 +1,19 @@
 """
-QGIS API Documentation Search — Keyword search across the QGIS PyQGIS API.
+Office API Documentation Search — keyword search across the Office object models.
 
 Builds an in-memory index from a curated API reference directory (API/*.md,
 same convention as SAP2000). Each top-level heading (# ClassName.method)
 becomes one searchable section with signature, parameters, and examples.
 
-If the API/ directory is absent, the index is empty and search tools
-return guidance pointing at the live-discovery tools instead
-(list_processing_algorithms, get_algorithm_help) — graceful degradation.
+If the API/ directory is absent the index is empty and search returns nothing,
+which is graceful degradation rather than an error — but note that office has no
+exec escape hatch, so documentation IS the fallback. There is nothing further
+down to degrade to.
+
+(This module and its former sibling function_registry.py were copied from the
+qgis connector; the docstring described PyQGIS and pointed at qgis-only tools
+`list_processing_algorithms` / `get_algorithm_help`, neither of which exists
+here. The CATEGORIES map below was adapted at the time; the prose was not.)
 """
 
 import re

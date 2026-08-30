@@ -24,6 +24,25 @@
       "Office apps must be installed for COM tools; MCP server starts fine without them (structured TOOL_ERROR off-Windows)"
     ]
   },
+  "tool_tiers": {
+    "core": [
+      "AvailableApps",
+      "Launch",
+      "get_error_hints",
+      "search_office_api",
+      "list_office_api_categories",
+      "list_templates",
+      "load_template",
+      "doc_create",
+      "doc_read",
+      "xlsx_create",
+      "xlsx_read_cells",
+      "pptx_create",
+      "pptx_read",
+      "msp_create",
+      "msp_open"
+    ]
+  },
   "config": {
     "env": []
   }
