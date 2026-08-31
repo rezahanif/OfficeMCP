@@ -41,7 +41,8 @@
       "pptx_read",
       "msp_create",
       "msp_open"
-    ]
+    ],
+    "aliases_file": "officemcp/aiconnect_aliases.json"
   },
   "config": {
     "env": []
