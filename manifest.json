@@ -11,7 +11,7 @@
   "runtime": "python",
   "entry": "run_server.py",
   "min_app_version": "0.4.0",
-  "entitlement_tier": "pro",
+  "entitlement_tier": "free",
   "port_env_var": "MCP_PORT",
   "token_env_var": "MCP_LICENSE_TOKEN",
   "stdio": true,
