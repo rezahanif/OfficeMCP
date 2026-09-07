@@ -1,5 +1,14 @@
 # Changelog — OfficeMCP
 
+## v1.0.6 (2026-09-07)
+
+### Added
+- Complete rewrite of TUTORIAL.md covering all 3 operational modes (Pure OOXML, live COM automation, MS Project), all 52 tool signatures and parameters, multi-client setups, and end-to-end workflows.
+- Explicit package includes for `templates/` and `API/` in `manifest.json`.
+
+### Fixed
+- Removed stray `D:\@OfficeMCP` directory to enforce path hygiene.
+
 ## v1.0.5 (2026-08-24)
 
 ### Added

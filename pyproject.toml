@@ -1,6 +1,6 @@
 [project]
 name = "officemcp"
-version = "1.0.5"
+version = "1.0.6"
 description = "this is an mcp server for you to control office application installed in windows"
 readme = "README.md"
 authors = [

@@ -1,7 +1,7 @@
 {
   "id": "office-mcp",
   "name": "Office Connector",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "manifest_schema_version": 1,
   "package_format_version": 1,
   "platform": {
@@ -15,6 +15,20 @@
   "port_env_var": "MCP_PORT",
   "token_env_var": "MCP_LICENSE_TOKEN",
   "stdio": true,
+  "package": {
+    "include": [
+      "run_server.py",
+      "officemcp",
+      "templates",
+      "API",
+      "manifest.json",
+      "marketplace.json",
+      "TUTORIAL.md",
+      "assets",
+      "scripts",
+      "LICENSE"
+    ]
+  },
   "platform_requirements": {
     "windows": [
       "Windows 10/11",
