@@ -1,7 +1,7 @@
 {
   "id": "office-mcp",
   "name": "Office Connector",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "manifest_schema_version": 1,
   "package_format_version": 1,
   "platform": {
@@ -27,6 +27,9 @@
       "assets",
       "scripts",
       "LICENSE"
+    ],
+    "vendor": [
+      "_vendor"
     ]
   },
   "platform_requirements": {

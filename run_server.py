@@ -7,6 +7,31 @@ crash/backoff), then central envelope wrap, then the upstream server.
 """
 import os
 import sys
+from pathlib import Path
+
+# Vendored dependencies (`stage-python-vendor.py`), shipped inside the
+# package. The connector used to ship source-only, so `from officemcp.OfficeMCP
+# import mcp` below failed with `ModuleNotFoundError: No module named 'fastmcp'`
+# on any machine without fastmcp/pydantic/pywin32 already installed
+# system-wide. AI CONNECT bundles the INTERPRETER; the connector brings its
+# own LIBRARIES, and this is where they are. Inserted (not appended) ahead of
+# the pywin32 subpaths specifically — pywin32's vendored layout splits across
+# win32/, win32/lib/ and pythonwin/, none of which sit on sys.path by default.
+_ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(_ROOT))
+_VENDOR = _ROOT / "_vendor"
+if _VENDOR.is_dir():
+    sys.path.insert(0, str(_VENDOR))
+    sys.path.insert(0, str(_VENDOR / "win32"))
+    sys.path.insert(0, str(_VENDOR / "win32" / "lib"))
+    sys.path.insert(0, str(_VENDOR / "pythonwin"))
+    if sys.platform == "win32":
+        pywin32_sys32 = _VENDOR / "pywin32_system32"
+        if pywin32_sys32.is_dir() and hasattr(os, "add_dll_directory"):
+            try:
+                os.add_dll_directory(str(pywin32_sys32))
+            except Exception:
+                pass
 
 try:
     from officemcp import aioconnect

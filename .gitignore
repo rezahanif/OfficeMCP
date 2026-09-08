@@ -9,3 +9,7 @@ __pycache__/
 .pytest_cache/
 D:\\@OfficeMCP
 "D:\\@OfficeMCP"/
+
+# AiConnect packaging: regenerate via
+# aiconnector/scripts/release/stage-python-vendor.py before packaging. Build artifact.
+_vendor/
